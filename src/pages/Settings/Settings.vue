@@ -341,8 +341,64 @@ import { fyo } from 'src/initFyo';
 import { ModelNameEnum } from 'models/types';
 import { setDarkMode } from 'src/utils/theme';
 import { showDialog, showToast } from 'src/utils/interactive';
-import { getDataURL } from 'src/utils/misc';
+import { getDataURL, updateConfigFiles } from 'src/utils/misc';
 import { shortcutsKey } from 'src/utils/injectionKeys';
+
+async function compressImage(
+  dataURL: string,
+  mimeType: string,
+  maxDim = 600,
+  quality = 0.85
+): Promise<string> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return dataURL;
+  }
+  if (mimeType.includes('svg')) {
+    return dataURL;
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+        if (!width || !height) {
+          resolve(dataURL);
+          return;
+        }
+        if (width <= maxDim && height <= maxDim && dataURL.length < 200000) {
+          resolve(dataURL);
+          return;
+        }
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataURL);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const outMime = mimeType === 'image/png' ? 'image/png' : 'image/jpeg';
+        const compressed = canvas.toDataURL(outMime, quality);
+        resolve(compressed || dataURL);
+      } catch {
+        resolve(dataURL);
+      }
+    };
+    img.onerror = () => resolve(dataURL);
+    img.src = dataURL;
+  });
+}
 
 const COMPONENT_NAME = 'Settings';
 
@@ -445,6 +501,12 @@ export default defineComponent({
           await sys.sync();
         }
 
+        try {
+          updateConfigFiles(fyo);
+        } catch {
+          // ignore if singles/config unavailable in isolated context
+        }
+
         setDarkMode(this.form.darkMode);
 
         showToast({
@@ -513,7 +575,8 @@ export default defineComponent({
 
         const extension = name.split('.').at(-1)?.toLowerCase() || '';
         const type = mime_types[extension] || 'image/png';
-        const dataURL = await getDataURL(type, data);
+        const rawDataURL = await getDataURL(type, data);
+        const dataURL = await compressImage(rawDataURL, type, 600, 0.85);
         this.form[key] = dataURL;
       }
     },

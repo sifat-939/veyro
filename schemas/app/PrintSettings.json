@@ -32,9 +32,7 @@
     {
       "fieldname": "address",
       "label": "Address",
-      "fieldtype": "Link",
-      "target": "Address",
-      "create": true,
+      "fieldtype": "Text",
       "section": "Contacts"
     },
     {

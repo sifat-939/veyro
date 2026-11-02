@@ -389,4 +389,47 @@ test('unified printFormat centralizes currency, date and words formatting', (t) 
   t.equal(wordsWithCurrency(100.5), 'One Hundred and Fifty Paisa only');
   t.end();
 });
+test('payment QR is never rendered on fully paid or draft sales invoices', async (t) => {
+  const fullyPaid = fyo.doc.getNewDoc('SalesInvoice', {
+    name: 'SINV-FULL-PAID',
+    submitted: true,
+    grandTotal: fyo.pesa(500),
+    baseGrandTotal: fyo.pesa(500),
+    outstandingAmount: fyo.pesa(0),
+  });
+  const fullyPaidView = await addStandardDocumentValues(fullyPaid, { items: [] });
+  t.equal(
+    fullyPaidView.showPaymentQR,
+    false,
+    'fully paid sales invoice must not show payment QR'
+  );
+
+  const draftDoc = fyo.doc.getNewDoc('SalesInvoice', {
+    name: 'SINV-DRAFT-DOC',
+    submitted: false,
+    grandTotal: fyo.pesa(500),
+    baseGrandTotal: fyo.pesa(500),
+    outstandingAmount: fyo.pesa(500),
+  });
+  const draftView = await addStandardDocumentValues(draftDoc, { items: [] });
+  t.equal(
+    draftView.showPaymentQR,
+    false,
+    'draft sales invoice must not show payment QR'
+  );
+
+  const activeDoc = fyo.doc.getNewDoc('SalesInvoice', {
+    name: 'SINV-ACTIVE-DUE',
+    submitted: true,
+    grandTotal: fyo.pesa(500),
+    baseGrandTotal: fyo.pesa(500),
+    outstandingAmount: fyo.pesa(250),
+  });
+  const activeView = await addStandardDocumentValues(activeDoc, { items: [] });
+  t.equal(
+    activeView.showPaymentQR,
+    true,
+    'submitted invoice with outstanding balance must allow payment QR'
+  );
+});
 closeTestFyo(fyo, __filename);

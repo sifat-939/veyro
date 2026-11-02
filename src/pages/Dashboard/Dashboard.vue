@@ -62,7 +62,7 @@
         <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
           <!-- Sales -->
           <div
-            class="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-875 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition cursor-pointer flex flex-col justify-between"
+            class="nivo-dashboard-card p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-875 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition cursor-pointer flex flex-col justify-between"
             @click="routeTo('/list/SalesInvoice')"
           >
             <div class="flex items-center justify-between">
@@ -83,7 +83,7 @@
 
           <!-- Purchases -->
           <div
-            class="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-875 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition cursor-pointer flex flex-col justify-between"
+            class="nivo-dashboard-card p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-875 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition cursor-pointer flex flex-col justify-between"
             @click="routeTo('/list/PurchaseInvoice')"
           >
             <div class="flex items-center justify-between">
@@ -104,13 +104,13 @@
 
           <!-- Receivables -->
           <div
-            class="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-875 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition cursor-pointer flex flex-col justify-between"
+            class="nivo-dashboard-card p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-875 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition cursor-pointer flex flex-col justify-between"
             @click="routeToUnpaid('SalesInvoice')"
           >
             <div class="flex items-center justify-between">
               <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t`Receivables` }}</span>
               <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60">
-                {{ t`Due` }}
+                {{ period === 'all' ? t`Due` : t`In Period` }}
               </span>
             </div>
             <div class="mt-3">
@@ -118,20 +118,25 @@
                 {{ formatMoney(period === 'all' ? metrics.allTimeReceivables : metrics.periodReceivables) }}
               </div>
               <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                {{ metrics.allTimeUnpaidSalesCount }} {{ t`unpaid invoices` }}
+                <template v-if="period === 'all'">
+                  {{ metrics.allTimeUnpaidSalesCount }} {{ t`unpaid invoices` }}
+                </template>
+                <template v-else>
+                  {{ metrics.periodUnpaidSalesCount }} {{ t`unpaid in period` }} ({{ formatMoney(metrics.allTimeReceivables) }} {{ t`total` }})
+                </template>
               </div>
             </div>
           </div>
 
           <!-- Payables -->
           <div
-            class="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-875 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition cursor-pointer flex flex-col justify-between"
+            class="nivo-dashboard-card p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-875 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition cursor-pointer flex flex-col justify-between"
             @click="routeToUnpaid('PurchaseInvoice')"
           >
             <div class="flex items-center justify-between">
               <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t`Payables` }}</span>
               <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60">
-                {{ t`Due` }}
+                {{ period === 'all' ? t`Due` : t`In Period` }}
               </span>
             </div>
             <div class="mt-3">
@@ -139,7 +144,12 @@
                 {{ formatMoney(period === 'all' ? metrics.allTimePayables : metrics.periodPayables) }}
               </div>
               <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                {{ metrics.allTimeUnpaidPurchasesCount }} {{ t`unpaid bills` }}
+                <template v-if="period === 'all'">
+                  {{ metrics.allTimeUnpaidPurchasesCount }} {{ t`unpaid bills` }}
+                </template>
+                <template v-else>
+                  {{ metrics.periodUnpaidPurchasesCount }} {{ t`unpaid in period` }} ({{ formatMoney(metrics.allTimePayables) }} {{ t`total` }})
+                </template>
               </div>
             </div>
           </div>
@@ -553,9 +563,11 @@ export default defineComponent({
               'party',
               'date',
               'grandTotal',
+              'baseGrandTotal',
               'outstandingAmount',
               'submitted',
               'cancelled',
+              'returnAgainst',
             ],
             filters: { submitted: true, cancelled: false },
           }),
@@ -565,9 +577,11 @@ export default defineComponent({
               'party',
               'date',
               'grandTotal',
+              'baseGrandTotal',
               'outstandingAmount',
               'submitted',
               'cancelled',
+              'returnAgainst',
             ],
             filters: { submitted: true, cancelled: false },
           }),
@@ -647,21 +661,34 @@ export default defineComponent({
 
       for (const doc of this.allSalesDocs) {
         if (isDocCancelled(doc) || !isDocSubmitted(doc)) continue;
+        const isReturn = Boolean(doc.returnAgainst);
         const outstanding = parseFloat(String(doc.outstandingAmount || 0)) || 0;
-        allTimeReceivables += outstanding;
-        if (outstanding > 0.005) {
-          allTimeUnpaidSalesCount++;
+        if (isReturn) {
+          allTimeReceivables -= outstanding;
+        } else {
+          allTimeReceivables += outstanding;
+          if (outstanding > 0.005) {
+            allTimeUnpaidSalesCount++;
+          }
         }
       }
 
       for (const doc of this.allPurchaseDocs) {
         if (isDocCancelled(doc) || !isDocSubmitted(doc)) continue;
+        const isReturn = Boolean(doc.returnAgainst);
         const outstanding = parseFloat(String(doc.outstandingAmount || 0)) || 0;
-        allTimePayables += outstanding;
-        if (outstanding > 0.005) {
-          allTimeUnpaidPurchasesCount++;
+        if (isReturn) {
+          allTimePayables -= outstanding;
+        } else {
+          allTimePayables += outstanding;
+          if (outstanding > 0.005) {
+            allTimeUnpaidPurchasesCount++;
+          }
         }
       }
+
+      allTimeReceivables = Math.max(0, allTimeReceivables);
+      allTimePayables = Math.max(0, allTimePayables);
 
       let totalSales = 0;
       let salesCount = 0;
@@ -672,14 +699,20 @@ export default defineComponent({
         if (isDocCancelled(doc) || !isDocSubmitted(doc)) continue;
         if (!isDocInPeriod(doc.date, from, to)) continue;
 
-        const grandTotal = parseFloat(String(doc.grandTotal || 0)) || 0;
+        const isReturn = Boolean(doc.returnAgainst);
+        const amount = parseFloat(String(doc.baseGrandTotal ?? doc.grandTotal ?? 0)) || 0;
         const outstanding = parseFloat(String(doc.outstandingAmount || 0)) || 0;
 
-        totalSales += grandTotal;
-        salesCount++;
-        periodReceivables += outstanding;
-        if (outstanding > 0.005) {
-          periodUnpaidSalesCount++;
+        if (isReturn) {
+          totalSales -= amount;
+          periodReceivables -= outstanding;
+        } else {
+          totalSales += amount;
+          salesCount++;
+          periodReceivables += outstanding;
+          if (outstanding > 0.005) {
+            periodUnpaidSalesCount++;
+          }
         }
       }
 
@@ -692,16 +725,25 @@ export default defineComponent({
         if (isDocCancelled(doc) || !isDocSubmitted(doc)) continue;
         if (!isDocInPeriod(doc.date, from, to)) continue;
 
-        const grandTotal = parseFloat(String(doc.grandTotal || 0)) || 0;
+        const isReturn = Boolean(doc.returnAgainst);
+        const amount = parseFloat(String(doc.baseGrandTotal ?? doc.grandTotal ?? 0)) || 0;
         const outstanding = parseFloat(String(doc.outstandingAmount || 0)) || 0;
 
-        totalPurchases += grandTotal;
-        purchaseCount++;
-        periodPayables += outstanding;
-        if (outstanding > 0.005) {
-          periodUnpaidPurchasesCount++;
+        if (isReturn) {
+          totalPurchases -= amount;
+          periodPayables -= outstanding;
+        } else {
+          totalPurchases += amount;
+          purchaseCount++;
+          periodPayables += outstanding;
+          if (outstanding > 0.005) {
+            periodUnpaidPurchasesCount++;
+          }
         }
       }
+
+      periodReceivables = Math.max(0, periodReceivables);
+      periodPayables = Math.max(0, periodPayables);
 
       this.metrics = {
         totalSales,
@@ -807,6 +849,7 @@ export default defineComponent({
         outstandingAmount: ['!=', zero],
         cancelled: false,
         submitted: true,
+        returnAgainst: null,
       };
       const schemaLabel = fyo.schemaMap[schemaName]?.label ?? schemaName;
       const label = this.t`Unpaid ${schemaLabel}`;

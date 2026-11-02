@@ -165,7 +165,7 @@
       page-break-inside: avoid;
     "
   >
-    <div v-if="print.paymentQR && (doc.showPaymentQR || doc.showPaymentQR === undefined)">
+    <div v-if="print.paymentQR && doc.showPaymentQR">
       <h3 class="nivo-print-label" style="margin-bottom: 14px">
         Scan QR for Payment
       </h3>

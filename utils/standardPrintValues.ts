@@ -102,12 +102,12 @@ export async function addStandardDocumentValues(doc: Doc, values: Values) {
   values.showTerms = ['SalesInvoice', 'PurchaseInvoice', 'SalesQuote'].includes(
     schema
   );
-  const hasPaymentQR = Boolean(doc.fyo.singles.PrintSettings?.paymentQR);
   values.showPaymentQR =
     schema === 'SalesInvoice' &&
     !doc.returnAgainst &&
     !doc.isCancelled &&
-    (hasPaymentQR || (!!doc.submitted && num(doc.outstandingAmount) > 0.004));
+    !!doc.submitted &&
+    num(doc.outstandingAmount) > 0.004;
   values.printColumns = [
     column('index', 'S.N.', 'center', '7%'),
     column('item', 'Name', 'left', '33%'),

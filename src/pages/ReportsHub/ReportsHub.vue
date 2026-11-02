@@ -679,7 +679,8 @@ export default defineComponent({
       activeReport: (this.reportType === 'purchase' ? 'purchase' : 'sales') as 'sales' | 'purchase',
       invoices: [] as ReportInvoiceRow[],
       loading: false,
-      loadFlightState: { promise: null } as SingleFlightState<void>,
+      salesFlightState: { promise: null } as SingleFlightState<void>,
+      purchaseFlightState: { promise: null } as SingleFlightState<void>,
       searchQuery: '',
       selectedStatus: 'all' as 'all' | 'paid' | 'unpaid' | 'partial' | 'draft',
       selectedDatePreset: 'all' as 'all' | 'today' | 'yesterday' | 'this_month' | 'this_year' | 'custom',
@@ -792,14 +793,11 @@ export default defineComponent({
         });
       }
 
-      // 3. Date Filter (using local calendar dateKey to avoid UTC boundary shifts)
+      // 3. Date Filter (using timezone-safe date string slice to avoid UTC boundary shifts)
       if (this.filterFromDate || this.filterToDate) {
         result = result.filter((row) => {
           if (!row.date) return false;
-          const dateObj = new Date(row.date);
-          const rowKey = Number.isNaN(dateObj.getTime())
-            ? String(row.date).slice(0, 10)
-            : dateKey(dateObj);
+          const rowKey = String(row.date).slice(0, 10);
           if (!rowKey) return false;
           if (this.filterFromDate && rowKey < this.filterFromDate) return false;
           if (this.filterToDate && rowKey > this.filterToDate) return false;
@@ -840,6 +838,13 @@ export default defineComponent({
       let balanceAmount = 0;
 
       for (const row of this.filteredRows) {
+        // Exclude unsubmitted draft vouchers from financial totals unless specifically filtered for draft
+        if (!row.submitted && this.selectedStatus !== 'draft') {
+          continue;
+        }
+        if (row.cancelled) {
+          continue;
+        }
         count += 1;
         totalAmount += row.grandTotal;
         paidAmount += row.paidAmount;
@@ -913,11 +918,16 @@ export default defineComponent({
       await this.loadReportData();
     },
     async loadReportData() {
-      return runSingleFlight(this.loadFlightState, async () => {
+      const targetReport = this.activeReport;
+      const flightState =
+        targetReport === 'sales'
+          ? this.salesFlightState
+          : this.purchaseFlightState;
+      return runSingleFlight(flightState, async () => {
         this.loading = true;
         try {
           const schemaName: 'SalesInvoice' | 'PurchaseInvoice' =
-            this.activeReport === 'sales' ? 'SalesInvoice' : 'PurchaseInvoice';
+            targetReport === 'sales' ? 'SalesInvoice' : 'PurchaseInvoice';
           const rawDocs = await fyo.db.getAllRaw(schemaName, {
             fields: [
               'name',
@@ -929,34 +939,45 @@ export default defineComponent({
               'cancelled',
               'terms',
               'currency',
+              'exchangeRate',
             ],
             orderBy: 'date',
             order: 'desc',
           });
 
+          // Discard results if user switched tabs while query was in-flight
+          if (this.activeReport !== targetReport) {
+            return;
+          }
+
           const rows: ReportInvoiceRow[] = [];
           for (const doc of rawDocs || []) {
             if (doc.cancelled) continue;
             const grandTotal = parseFloat(String(doc.grandTotal || '0')) || 0;
+            const exchangeRate = parseFloat(String(doc.exchangeRate || '1')) || 1;
             const isSubmitted = Boolean(doc.submitted);
             const isCancelled = Boolean(doc.cancelled);
 
             // In Frappe Books / Fyo, draft invoices have outstandingAmount = 0 before submission.
-            // For submitted invoices, outstandingAmount reflects true unpaid balance.
-            // For unsubmitted draft invoices, balance is grandTotal and paid is 0.
-            const outstanding = isSubmitted
+            // For submitted invoices, outstandingAmount reflects true unpaid balance in company base currency.
+            // Convert outstanding to document currency before calculating paid amount:
+            const rawOutstanding = isSubmitted
               ? parseFloat(String(doc.outstandingAmount || '0')) || 0
-              : grandTotal;
+              : null;
+            const dueInDocCurrency =
+              rawOutstanding !== null
+                ? (exchangeRate > 0 ? rawOutstanding / exchangeRate : rawOutstanding)
+                : grandTotal;
             const paid = isSubmitted
-              ? Math.max(0, grandTotal - outstanding)
+              ? Math.max(0, grandTotal - dueInDocCurrency)
               : 0;
 
             let status: ReportInvoiceRow['status'] = 'UNPAID';
             if (!isSubmitted) {
               status = 'DRAFT';
-            } else if (outstanding <= 0.005) {
+            } else if (dueInDocCurrency <= 0.005) {
               status = 'PAID';
-            } else if (outstanding >= grandTotal - 0.005) {
+            } else if (dueInDocCurrency >= grandTotal - 0.005) {
               status = 'UNPAID';
             } else {
               status = 'PARTIALLY PAID';
@@ -969,7 +990,7 @@ export default defineComponent({
               status,
               grandTotal,
               paidAmount: paid,
-              balanceAmount: outstanding,
+              balanceAmount: dueInDocCurrency,
               note: String(doc.terms || ''),
               submitted: isSubmitted,
               cancelled: isCancelled,
@@ -979,12 +1000,16 @@ export default defineComponent({
 
           this.invoices = rows;
         } catch (err) {
-          showToast({
-            message: this.t`Failed to load report data: ${err instanceof Error ? err.message : String(err)}`,
-            type: 'error',
-          });
+          if (this.activeReport === targetReport) {
+            showToast({
+              message: this.t`Failed to load report data: ${err instanceof Error ? err.message : String(err)}`,
+              type: 'error',
+            });
+          }
         } finally {
-          this.loading = false;
+          if (this.activeReport === targetReport) {
+            this.loading = false;
+          }
         }
       });
     },
@@ -1048,17 +1073,22 @@ export default defineComponent({
     },
     formatDate(d: string | Date | unknown): string {
       if (!d) return '—';
-      try {
-        const dateObj = d instanceof Date ? d : new Date(String(d));
-        if (Number.isNaN(dateObj.getTime())) return String(d).slice(0, 10);
-        return dateKey(dateObj);
-      } catch {
-        return String(d).slice(0, 10);
-      }
+      return String(d).slice(0, 10);
     },
     formatDisplayDate(d: string | Date | unknown): string {
       if (!d) return '—';
       try {
+        const raw = String(d).slice(0, 10);
+        const parts = raw.split('-');
+        if (parts.length === 3) {
+          const year = parts[0];
+          const monthIdx = parseInt(parts[1], 10) - 1;
+          const day = parts[2].padStart(2, '0');
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          if (monthIdx >= 0 && monthIdx < 12) {
+            return `${day} ${months[monthIdx]} ${year}`;
+          }
+        }
         const dateObj = d instanceof Date ? d : new Date(String(d));
         if (Number.isNaN(dateObj.getTime())) return String(d).slice(0, 10);
         const day = dateObj.getDate().toString().padStart(2, '0');
