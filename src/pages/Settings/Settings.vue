@@ -7,9 +7,6 @@
           <feather-icon name="settings" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <span>{{ t`Settings` }}</span>
         </h1>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          {{ t`Manage your company profile, data backup, and display preferences.` }}
-        </p>
       </div>
 
       <div class="flex items-center gap-2">
@@ -42,9 +39,6 @@
               <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
                 {{ t`Company Profile` }}
               </h2>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ t`Basic information used in invoices, receipts, and system headers.` }}
-              </p>
             </div>
           </div>
         </div>
@@ -158,161 +152,111 @@
             </div>
           </div>
 
-          <!-- Multi-Asset Upload Section: 3 image upload cards side-by-side -->
-          <div class="md:col-span-2 pt-5 border-t border-gray-100 dark:border-gray-800">
-            <div class="mb-3">
-              <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                {{ t`Print & Branding Assets` }}
-              </label>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {{ t`Upload company assets for customized PDF invoices, receipts, statements, and reports.` }}
-              </p>
-            </div>
+          <!-- Print & Branding Assets: Logo, Signature, Payment QR -->
+          <div class="md:col-span-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              {{ t`Branding Assets` }}
+            </label>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <!-- a) Company Logo -->
-              <div class="rounded-xl border border-gray-200 dark:border-gray-750 bg-gray-50/60 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
-                <div>
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                      {{ t`Company Logo` }}
-                    </span>
-                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                      {{ t`প্রতিষ্ঠানের লোগো` }}
-                    </span>
-                  </div>
-                  <div class="h-28 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 p-2 flex items-center justify-center overflow-hidden mb-2.5 shadow-2xs">
-                    <img
-                      v-if="form.logo"
-                      :src="form.logo"
-                      alt="Company Logo"
-                      class="max-h-full max-w-full object-contain"
-                    />
-                    <div v-else class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-1">
-                      <feather-icon name="image" class="w-6 h-6 stroke-1" />
-                      <span class="text-[11px]">{{ t`No logo uploaded` }}</span>
-                    </div>
-                  </div>
-                  <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight mb-3">
-                    {{ t`Appears on top headers, invoices, bills, and report banners.` }}
-                  </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <!-- Logo -->
+              <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3.5 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ t`Logo` }}</span>
+                  <feather-icon name="image" class="w-3.5 h-3.5 text-gray-400" />
                 </div>
-                <div class="flex items-center gap-2 pt-2 border-t border-gray-200/60 dark:border-gray-750">
+                <div class="h-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 p-2 flex items-center justify-center overflow-hidden mb-3">
+                  <img
+                    v-if="form.logo"
+                    :src="form.logo"
+                    alt="Logo"
+                    class="max-h-full max-w-full object-contain"
+                  />
+                  <feather-icon v-else name="image" class="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                </div>
+                <div class="flex items-center gap-1.5">
                   <button
                     type="button"
-                    class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-650 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition flex items-center justify-center gap-1 shadow-2xs"
+                    class="flex-1 py-1 px-2 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition"
                     @click="handleSelectAsset('logo')"
                   >
-                    <feather-icon name="upload" class="w-3 h-3 text-gray-500" />
-                    <span>{{ form.logo ? t`Change Logo` : t`Upload Logo` }}</span>
+                    {{ form.logo ? t`Change` : t`Upload` }}
                   </button>
                   <button
                     v-if="form.logo"
                     type="button"
-                    class="px-2.5 py-1.5 text-xs font-medium rounded-md border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100/50 transition flex items-center justify-center gap-1"
-                    :title="t`Remove Logo`"
+                    class="py-1 px-2 text-xs font-medium rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition"
                     @click="removeAsset('logo')"
                   >
-                    <feather-icon name="trash-2" class="w-3 h-3" />
-                    <span>{{ t`Remove` }}</span>
+                    {{ t`Remove` }}
                   </button>
                 </div>
               </div>
 
-              <!-- b) Authorized Signature -->
-              <div class="rounded-xl border border-gray-200 dark:border-gray-750 bg-gray-50/60 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
-                <div>
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                      {{ t`Authorized Signature` }}
-                    </span>
-                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                      {{ t`অনুমোদিত স্বাক্ষর` }}
-                    </span>
-                  </div>
-                  <div class="h-28 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 p-2 flex items-center justify-center overflow-hidden mb-2.5 shadow-2xs">
-                    <img
-                      v-if="form.authorizedSignature"
-                      :src="form.authorizedSignature"
-                      alt="Authorized Signature"
-                      class="max-h-full max-w-full object-contain"
-                    />
-                    <div v-else class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-1">
-                      <feather-icon name="edit-3" class="w-6 h-6 stroke-1" />
-                      <span class="text-[11px]">{{ t`No signature uploaded` }}</span>
-                    </div>
-                  </div>
-                  <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight mb-3">
-                    {{ t`Appears on bottom signature block of invoices, statements, and reports.` }}
-                  </p>
+              <!-- Signature -->
+              <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3.5 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ t`Signature` }}</span>
+                  <feather-icon name="edit-3" class="w-3.5 h-3.5 text-gray-400" />
                 </div>
-                <div class="flex items-center gap-2 pt-2 border-t border-gray-200/60 dark:border-gray-750">
+                <div class="h-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 p-2 flex items-center justify-center overflow-hidden mb-3">
+                  <img
+                    v-if="form.authorizedSignature"
+                    :src="form.authorizedSignature"
+                    alt="Signature"
+                    class="max-h-full max-w-full object-contain"
+                  />
+                  <feather-icon v-else name="edit-3" class="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                </div>
+                <div class="flex items-center gap-1.5">
                   <button
                     type="button"
-                    class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-650 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition flex items-center justify-center gap-1 shadow-2xs"
+                    class="flex-1 py-1 px-2 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition"
                     @click="handleSelectAsset('authorizedSignature')"
                   >
-                    <feather-icon name="upload" class="w-3 h-3 text-gray-500" />
-                    <span>{{ form.authorizedSignature ? t`Change Signature` : t`Upload Signature` }}</span>
+                    {{ form.authorizedSignature ? t`Change` : t`Upload` }}
                   </button>
                   <button
                     v-if="form.authorizedSignature"
                     type="button"
-                    class="px-2.5 py-1.5 text-xs font-medium rounded-md border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100/50 transition flex items-center justify-center gap-1"
-                    :title="t`Remove Signature`"
+                    class="py-1 px-2 text-xs font-medium rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition"
                     @click="removeAsset('authorizedSignature')"
                   >
-                    <feather-icon name="trash-2" class="w-3 h-3" />
-                    <span>{{ t`Remove` }}</span>
+                    {{ t`Remove` }}
                   </button>
                 </div>
               </div>
 
-              <!-- c) Payment QR / Barcode -->
-              <div class="rounded-xl border border-gray-200 dark:border-gray-750 bg-gray-50/60 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
-                <div>
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                      {{ t`Payment QR / Barcode` }}
-                    </span>
-                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                      {{ t`পেমেন্ট কিউআর বা বারকোড` }}
-                    </span>
-                  </div>
-                  <div class="h-28 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 p-2 flex items-center justify-center overflow-hidden mb-2.5 shadow-2xs">
-                    <img
-                      v-if="form.paymentQR"
-                      :src="form.paymentQR"
-                      alt="Payment QR"
-                      class="max-h-full max-w-full object-contain"
-                    />
-                    <div v-else class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-1">
-                      <feather-icon name="maximize" class="w-6 h-6 stroke-1" />
-                      <span class="text-[11px]">{{ t`No QR code uploaded` }}</span>
-                    </div>
-                  </div>
-                  <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight mb-3">
-                    {{ t`Appears on invoices and statements for instant mobile payment scanning.` }}
-                  </p>
+              <!-- Payment QR -->
+              <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3.5 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ t`Payment QR / Barcode` }}</span>
+                  <feather-icon name="maximize" class="w-3.5 h-3.5 text-gray-400" />
                 </div>
-                <div class="flex items-center gap-2 pt-2 border-t border-gray-200/60 dark:border-gray-750">
+                <div class="h-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 p-2 flex items-center justify-center overflow-hidden mb-3">
+                  <img
+                    v-if="form.paymentQR"
+                    :src="form.paymentQR"
+                    alt="Payment QR"
+                    class="max-h-full max-w-full object-contain"
+                  />
+                  <feather-icon v-else name="maximize" class="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                </div>
+                <div class="flex items-center gap-1.5">
                   <button
                     type="button"
-                    class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-650 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition flex items-center justify-center gap-1 shadow-2xs"
+                    class="flex-1 py-1 px-2 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition"
                     @click="handleSelectAsset('paymentQR')"
                   >
-                    <feather-icon name="upload" class="w-3 h-3 text-gray-500" />
-                    <span>{{ form.paymentQR ? t`Change QR Code` : t`Upload QR Code` }}</span>
+                    {{ form.paymentQR ? t`Change` : t`Upload` }}
                   </button>
                   <button
                     v-if="form.paymentQR"
                     type="button"
-                    class="px-2.5 py-1.5 text-xs font-medium rounded-md border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100/50 transition flex items-center justify-center gap-1"
-                    :title="t`Remove QR Code`"
+                    class="py-1 px-2 text-xs font-medium rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition"
                     @click="removeAsset('paymentQR')"
                   >
-                    <feather-icon name="trash-2" class="w-3 h-3" />
-                    <span>{{ t`Remove` }}</span>
+                    {{ t`Remove` }}
                   </button>
                 </div>
               </div>
@@ -325,27 +269,24 @@
       <section class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <!-- Database Backup Card -->
         <div class="bg-white dark:bg-gray-850 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm flex flex-col justify-between">
-          <div class="flex items-start gap-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-              <feather-icon name="database" class="w-5 h-5" />
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+              <feather-icon name="database" class="w-4 h-4" />
             </div>
             <div>
               <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {{ t`Database Backup` }}
               </h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                {{ t`Create a complete and safe backup of your company database with one click.` }}
-              </p>
             </div>
           </div>
 
           <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <span class="text-xs text-gray-400">
-              {{ isBackingUp ? t`Backing up...` : t`Ready to backup` }}
+              {{ isBackingUp ? t`Backing up...` : t`Safe local copy` }}
             </span>
             <button
               type="button"
-              class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+              class="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
               :disabled="isBackingUp"
               @click="handleCreateBackup"
             >
@@ -354,34 +295,31 @@
                 class="w-3.5 h-3.5"
                 :class="{ 'animate-spin': isBackingUp }"
               />
-              <span>{{ isBackingUp ? t`Creating Backup...` : t`Backup Database` }}</span>
+              <span>{{ isBackingUp ? t`Backing up...` : t`Backup Now` }}</span>
             </button>
           </div>
         </div>
 
         <!-- Dark Mode Toggle Card -->
         <div class="bg-white dark:bg-gray-850 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm flex flex-col justify-between">
-          <div class="flex items-start gap-3">
-            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
-              <feather-icon :name="form.darkMode ? 'moon' : 'sun'" class="w-5 h-5" />
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+              <feather-icon :name="form.darkMode ? 'moon' : 'sun'" class="w-4 h-4" />
             </div>
             <div>
               <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {{ t`App Theme` }}
               </h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                {{ t`Toggle instantly between Dark and Light mode for comfortable viewing.` }}
-              </p>
             </div>
           </div>
 
           <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <span class="text-xs font-medium" :class="form.darkMode ? 'text-purple-400' : 'text-amber-600'">
-              {{ form.darkMode ? t`Dark Mode Active` : t`Light Mode Active` }}
+              {{ form.darkMode ? t`Dark Mode` : t`Light Mode` }}
             </span>
             <button
               type="button"
-              class="px-3.5 py-1.5 text-xs font-semibold rounded-lg border transition flex items-center gap-1.5 shadow-sm"
+              class="px-3 py-1.5 text-xs font-medium rounded-lg border transition flex items-center gap-1.5 shadow-sm"
               :class="form.darkMode
                 ? 'bg-purple-900/30 border-purple-700 text-purple-300 hover:bg-purple-900/50'
                 : 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'"
