@@ -144,7 +144,8 @@
       "label": "Pos Print Width",
       "fieldtype": "Float",
       "default": 8,
-      "section": "Customizations"
+      "section": "Customizations",
+      "hidden": true
     },
     {
       "fieldname": "termsAndConditions",

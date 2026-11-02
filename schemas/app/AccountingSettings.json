@@ -16,7 +16,6 @@
       "label": "Company Name",
       "fieldname": "companyName",
       "fieldtype": "Data",
-      "readOnly": true,
       "required": true,
       "section": "Default"
     },
@@ -69,113 +68,129 @@
       "fieldname": "enableDiscounting",
       "label": "Enable Discount Accounting",
       "fieldtype": "Check",
-      "default": false,
-      "section": "Features"
+      "default": true,
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableInventory",
       "label": "Enable Inventory",
       "fieldtype": "Check",
-      "default": false,
-      "section": "Features"
+      "default": true,
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enablePriceList",
       "label": "Enable Price List",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableInvoiceReturns",
       "label": "Enable Invoice Returns",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableFormCustomization",
       "label": "Enable Form Customization",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableERPNextSync",
       "label": "Enable ERPNext Sync",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableLead",
       "label": "Enable Lead",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enablePricingRule",
       "label": "Enable Pricing Rule",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableItemEnquiry",
       "label": "Enable Item Enquiry",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableLoyaltyProgram",
       "label": "Enable Loyalty Program",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableCouponCode",
       "label": "Enable Coupon Code",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableSalesQuotes",
       "label": "Enable Sales Quotes",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableShipment",
       "label": "Enable Shipment",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enablePurchaseReceipt",
       "label": "Enable Purchase Receipt",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableStockLedger",
       "label": "Enable Stock Ledger",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enablePrintTemplates",
       "label": "Enable Print Templates",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableTaxTemplates",
@@ -190,35 +205,40 @@
       "label": "Enable Import Wizard",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableChartOfAccounts",
       "label": "Enable Chart of Accounts",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableitemGroup",
       "label": "Enable Item Group",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enablePointOfSaleWithOutInventory",
       "label": "Enable POS Without Inventory",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enablePartialPayment",
       "label": "Enable Partial Payment",
       "fieldtype": "Check",
-      "default": false,
-      "section": "Features"
+      "default": true,
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "fiscalYearStart",

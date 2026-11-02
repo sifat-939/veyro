@@ -70,7 +70,7 @@ export default defineComponent({
     this.groups = [
       {
         label: t`Global`,
-        description: t`Applicable anywhere in Nivo`,
+        description: t`Applicable anywhere in VEYRO`,
         collapsed: false,
         shortcuts: [
           {

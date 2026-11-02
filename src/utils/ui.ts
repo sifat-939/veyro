@@ -1102,7 +1102,7 @@ export async function deleteDb(filePath: string) {
   } else if (error?.code === 'EPERM') {
     await showDialog({
       title: t`Cannot Delete`,
-      detail: t`Close Nivo and try manually.`,
+      detail: t`Close VEYRO and try manually.`,
       type: 'error',
     });
   } else if (error) {

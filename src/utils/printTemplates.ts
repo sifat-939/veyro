@@ -12,6 +12,7 @@ import {
   addStandardDocumentValues,
   getStatementValues,
 } from 'utils/standardPrintValues';
+import { wordsWithCurrency } from 'utils/printFormat';
 
 export type PrintTemplateHint = {
   [key: string]: string | PrintTemplateHint | PrintTemplateHint[];
@@ -61,7 +62,11 @@ export async function getPrintTemplatePropValues(
     return {
       doc: {
         ...values,
-        totalInWords: wordsWithCurrency(values.closingAmount, doc.fyo),
+        totalInWords: wordsWithCurrency(
+          values.closingAmount,
+          undefined,
+          doc.fyo.singles.SystemSettings?.currency
+        ),
       },
       print,
     } as PrintValues;
@@ -82,8 +87,8 @@ export async function getPrintTemplatePropValues(
   )
     values.totalInWords = wordsWithCurrency(
       Math.abs(total.float),
-      doc.fyo,
-      doc.currency
+      typeof doc.currency === 'string' ? doc.currency : undefined,
+      doc.fyo.singles.SystemSettings?.currency
     );
   if (printSettings.displayTime && doc.date)
     values.time = getTime(String(doc.date));
@@ -93,25 +98,6 @@ export async function getPrintTemplatePropValues(
 export async function getPrintSettingsValues(fyo: Fyo) {
   const settings = await fyo.doc.getDoc(ModelNameEnum.PrintSettings);
   return getPrintTemplateDocValues(settings, printSettingsFields);
-}
-
-function wordsWithCurrency(
-  total: number,
-  fyo: Fyo,
-  documentCurrency?: unknown
-) {
-  const currency =
-    typeof documentCurrency === 'string' && documentCurrency
-      ? documentCurrency
-      : String(fyo.singles.SystemSettings?.currency || '');
-  const name =
-    (
-      { BDT: 'Taka', INR: 'Rupees', USD: 'Dollars', EUR: 'Euros' } as Record<
-        string,
-        string
-      >
-    )[currency] || currency;
-  return getGrandTotalInWords(total).replace(/ only$/i, ` ${name} Only`);
 }
 
 function getTime(dateString: string): string {
@@ -141,111 +127,6 @@ export function getPrintTemplatePropHints(schemaName: string, fyo: Fyo) {
   return hints;
 }
 
-function getGrandTotalInWords(total: number) {
-  const formattedTotal = total.toFixed(2);
-
-  const [integerPart, decimalPart] = formattedTotal.split('.');
-
-  const ones = [
-    '',
-    t`One`,
-    t`Two`,
-    t`Three`,
-    t`Four`,
-    t`Five`,
-    t`Six`,
-    t`Seven`,
-    t`Eight`,
-    t`Nine`,
-  ];
-
-  const teens = [
-    t`Ten`,
-    t`Eleven`,
-    t`Twelve`,
-    t`Thirteen`,
-    t`Fourteen`,
-    t`Fifteen`,
-    t`Sixteen`,
-    t`Seventeen`,
-    t`Eighteen`,
-    t`Nineteen`,
-  ];
-
-  const tens = [
-    '',
-    '',
-    t`Twenty`,
-    t`Thirty`,
-    t`Forty`,
-    t`Fifty`,
-    t`Sixty`,
-    t`Seventy`,
-    t`Eighty`,
-    t`Ninety`,
-  ];
-
-  const scales = ['', t`Thousand`, t`Million`, t`Billion`];
-
-  function convertThreeDigitNumber(num: number) {
-    let result = '';
-
-    const hundredDigit = Math.floor(num / 100);
-    const remainder = num % 100;
-
-    if (hundredDigit > 0) {
-      result += ones[hundredDigit] + ` ${t`Hundred`}`;
-    }
-
-    if (remainder > 0) {
-      if (hundredDigit > 0) {
-        result += ` ${t`And`} `;
-      }
-
-      if (remainder < 10) {
-        result += ones[remainder];
-      } else if (remainder < 20) {
-        result += teens[remainder - 10];
-      } else {
-        const tensDigit = Math.floor(remainder / 10);
-        const onesDigit = remainder % 10;
-        result += tens[tensDigit];
-        if (onesDigit > 0) {
-          result += ' ' + ones[onesDigit];
-        }
-      }
-    }
-
-    return result;
-  }
-
-  let spelledOutInteger = '';
-  const integerGroups = integerPart.match(/(\d{1,3})(?=(\d{3})*$)/g) || [];
-  const groupCount = integerGroups.length;
-
-  integerGroups.forEach((group, index) => {
-    const groupValue = parseInt(group);
-
-    if (groupValue > 0) {
-      const groupText = convertThreeDigitNumber(groupValue);
-      const groupSuffix = scales[groupCount - index - 1];
-      spelledOutInteger +=
-        groupText + (groupSuffix ? ' ' + groupSuffix : '') + ' ';
-    }
-  });
-
-  spelledOutInteger = spelledOutInteger.trim() || t`Zero`;
-
-  let spelledOutDecimal = '';
-  const decimalCents = parseInt(decimalPart);
-
-  if (decimalCents !== 0) {
-    spelledOutDecimal =
-      ` ${t`and`} ` + convertThreeDigitNumber(decimalCents) + ` ${t`Paisa`}`;
-  }
-
-  return `${spelledOutInteger}${spelledOutDecimal} ${t`only`}`;
-}
 
 function formattedTotalDiscount(doc: Doc): string {
   if (!(doc instanceof Invoice)) {

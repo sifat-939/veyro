@@ -463,8 +463,20 @@ export default defineComponent({
 
       return this.docOrNull?.name || this.t`New Entry`;
     },
+    resolvedSchemaName(): string {
+      if (this.fyo.schemaMap[this.schemaName]) {
+        return this.schemaName;
+      }
+      const cleaned = this.schemaName.replace(/[\s\-_]+/g, '').toLowerCase();
+      for (const key of Object.keys(this.fyo.schemaMap)) {
+        if (key.toLowerCase() === cleaned) {
+          return key;
+        }
+      }
+      return this.schemaName;
+    },
     schema(): Schema {
-      const schema = this.fyo.schemaMap[this.schemaName];
+      const schema = this.fyo.schemaMap[this.resolvedSchemaName];
       if (!schema) {
         throw new ValidationError(`no schema found with ${this.schemaName}`);
       }
@@ -507,11 +519,11 @@ export default defineComponent({
     if (this.groupedFields) {
       this.activeTab = [...this.groupedFields.keys()][0];
     }
-    this.isPrintable = await isPrintable(this.schemaName);
+    this.isPrintable = await isPrintable(this.resolvedSchemaName);
   },
   activated(): void {
     this.useFullWidth = !!this.fyo.singles.Misc?.useFullWidth;
-    docsPathRef.value = docsPathMap[this.schemaName] ?? '';
+    docsPathRef.value = docsPathMap[this.resolvedSchemaName] ?? '';
     this.shortcuts?.pmod.set(this.context, ['KeyP'], () => {
       if (!this.canPrint) {
         return;
@@ -591,7 +603,7 @@ export default defineComponent({
       }
 
       this.docOrNull = await getDocFromNameIfExistsElseNew(
-        this.schemaName,
+        this.resolvedSchemaName,
         this.name
       );
       this.errors = {};
@@ -599,7 +611,7 @@ export default defineComponent({
       if (
         isSchemaCreationBlocked(
           this.fyo,
-          this.schemaName,
+          this.resolvedSchemaName,
           !!this.docOrNull?.notInserted
         )
       ) {
@@ -612,7 +624,7 @@ export default defineComponent({
       }
 
       this.doc.once('afterSync', async () => {
-        const route = getFormRoute(this.schemaName, this.doc.name!);
+        const route = getFormRoute(this.resolvedSchemaName, this.doc.name!);
         await this.$router.replace(route);
       });
     },

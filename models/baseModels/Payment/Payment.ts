@@ -116,6 +116,10 @@ export class Payment extends Transactional {
       return;
     }
 
+    if (!this.amount || (this.amount as Money).lte(0)) {
+      throw new ValidationError(t`Payment amount must be greater than 0.`);
+    }
+
     await this.validateFor();
     this.validateAccounts();
     this.validateTotalReferenceAmount();
@@ -155,15 +159,19 @@ export class Payment extends Transactional {
   }
 
   validateAccounts() {
-    if (this.paymentAccount !== this.account || !this.account) {
-      return;
+    if (!this.account || !this.paymentAccount) {
+      throw new ValidationError(
+        t`Both From Account and To Account are required.`
+      );
     }
 
-    throw new this.fyo.errors.ValidationError(
-      t`To Account and From Account can't be the same: ${
-        this.account as string
-      }`
-    );
+    if (this.paymentAccount === this.account) {
+      throw new ValidationError(
+        t`To Account and From Account can't be the same: ${
+          this.account as string
+        }`
+      );
+    }
   }
 
   validateTotalReferenceAmount() {
@@ -630,13 +638,64 @@ export class Payment extends Transactional {
     return account;
   }
 
-  async _getAccountFromParty() {
+  async _getAccountFromParty(): Promise<string | null> {
     const party = (await this.loadAndGetLink('party')) as Party | null;
-    if (!party || party.role === 'Both') {
+    if (!party) {
       return null;
     }
 
-    return party.defaultAccount ?? null;
+    const accountsMap = await this._getAccountsMap();
+
+    if (party.role === PartyRoleEnum.Customer) {
+      return (
+        party.defaultAccount ??
+        accountsMap[AccountTypeEnum.Receivable]?.[0] ??
+        null
+      );
+    }
+
+    if (party.role === PartyRoleEnum.Supplier) {
+      return (
+        party.defaultAccount ??
+        accountsMap[AccountTypeEnum.Payable]?.[0] ??
+        null
+      );
+    }
+
+    // Role === 'Both'
+    if (this.paymentType === PaymentTypeEnum.Receive) {
+      if (party.defaultAccount) {
+        try {
+          const accDoc = await this.fyo.db.get(
+            ModelNameEnum.Account,
+            party.defaultAccount,
+            ['accountType']
+          );
+          if (accDoc?.accountType === AccountTypeEnum.Receivable) {
+            return party.defaultAccount;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return accountsMap[AccountTypeEnum.Receivable]?.[0] ?? null;
+    } else {
+      if (party.defaultAccount) {
+        try {
+          const accDoc = await this.fyo.db.get(
+            ModelNameEnum.Account,
+            party.defaultAccount,
+            ['accountType']
+          );
+          if (accDoc?.accountType === AccountTypeEnum.Payable) {
+            return party.defaultAccount;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return accountsMap[AccountTypeEnum.Payable]?.[0] ?? null;
+    }
   }
 
   async _getAccountFromFor() {
@@ -675,7 +734,11 @@ export class Payment extends Transactional {
 
         const paymentMethodDoc = await this.paymentMethodDoc();
 
-        if (paymentMethodDoc.type === 'Cash') {
+        if (paymentMethodDoc?.account) {
+          return paymentMethodDoc.get('account');
+        }
+
+        if (paymentMethodDoc?.type === 'Cash') {
           return accountsMap[AccountTypeEnum.Cash]?.[0] ?? null;
         }
 
@@ -696,11 +759,11 @@ export class Payment extends Transactional {
 
         const paymentMethodDoc = await this.paymentMethodDoc();
 
-        if (paymentMethodDoc.account) {
+        if (paymentMethodDoc?.account) {
           return paymentMethodDoc.get('account');
         }
 
-        if (paymentMethodDoc.type === 'Cash') {
+        if (paymentMethodDoc?.type === 'Cash') {
           return accountsMap[AccountTypeEnum.Cash]?.[0] ?? null;
         }
 
@@ -718,6 +781,11 @@ export class Payment extends Transactional {
         const refDoc = (await reference?.loadAndGetLink(
           'referenceName'
         )) as Invoice | null;
+
+        // If no referenced invoice is attached, respect existing paymentType if user chose one
+        if (!refDoc && this.paymentType) {
+          return this.paymentType;
+        }
 
         const partyDoc = (await this.loadAndGetLink('party')) as Party;
         const outstanding = partyDoc.outstandingAmount as Money;
@@ -750,7 +818,7 @@ export class Payment extends Transactional {
               : PaymentTypeEnum.Pay;
           } else {
             if (outstanding?.isZero() ?? true) {
-              return this.paymentType;
+              return this.paymentType || PaymentTypeEnum.Receive;
             }
 
             return outstanding?.isPositive()
@@ -759,18 +827,17 @@ export class Payment extends Transactional {
           }
         }
 
-        if (outstanding?.isZero() ?? true) {
-          return this.paymentType;
-        }
-
-        if (outstanding?.isPositive()) {
-          return PaymentTypeEnum.Receive;
-        }
-        return PaymentTypeEnum.Pay;
+        return this.paymentType || PaymentTypeEnum.Receive;
       },
+      dependsOn: ['party', 'for'],
     },
     amount: {
-      formula: () => this.getSum('for', 'amount', false),
+      formula: () => {
+        if (!this.for || this.for.length === 0) {
+          return this.amount;
+        }
+        return this.getSum('for', 'amount', false);
+      },
       dependsOn: ['for'],
     },
     amountPaid: {

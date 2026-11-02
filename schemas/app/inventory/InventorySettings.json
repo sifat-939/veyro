@@ -37,32 +37,37 @@
       "fieldname": "enableBarcodes",
       "label": "Enable Barcodes",
       "fieldtype": "Check",
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableBatches",
       "label": "Enable Batches",
       "fieldtype": "Check",
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableSerialNumber",
       "label": "Enable Serial Number",
       "fieldtype": "Check",
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enableUomConversions",
       "label": "Enable UOM Conversion",
       "fieldtype": "Check",
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     },
     {
       "fieldname": "enablePointOfSale",
       "label": "Enable Point of Sale",
       "fieldtype": "Check",
       "default": false,
-      "section": "Features"
+      "section": "Features",
+      "hidden": true
     }
   ]
 }

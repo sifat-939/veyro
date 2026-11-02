@@ -121,7 +121,13 @@ export default defineComponent({
       activeScreen: null,
       dbPath: '',
       companyName: '',
-      darkMode: false,
+      darkMode: (function () {
+        try {
+          return localStorage.getItem('nivo_dark_mode') !== 'false';
+        } catch (e) {
+          return true;
+        }
+      })(),
     } as {
       activeScreen: null | Screen;
       dbPath: string;
@@ -141,7 +147,10 @@ export default defineComponent({
   },
   async mounted() {
     await this.setInitialScreen();
-    const darkMode = !!fyo.singles.SystemSettings?.darkMode;
+    const darkMode =
+      fyo.singles.SystemSettings?.darkMode !== undefined
+        ? !!fyo.singles.SystemSettings?.darkMode
+        : localStorage.getItem('nivo_dark_mode') !== 'false';
     setDarkMode(darkMode);
     this.darkMode = darkMode;
   },

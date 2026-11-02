@@ -51,10 +51,27 @@ export default class DatabaseCore extends DatabaseBase {
   #transaction?: Knex.Transaction;
   #transactionDepth = 0;
   #transactionFailed = false;
+  #transactionWatchdog?: ReturnType<typeof setTimeout>;
+  transactionTimeoutMs = 30_000;
   typeMap = sqliteTypeMap;
   dbPath: string;
   schemaMap: SchemaMap = {};
   connectionParams: Knex.Config;
+
+  #clearTransactionWatchdog() {
+    if (this.#transactionWatchdog) {
+      clearTimeout(this.#transactionWatchdog);
+      this.#transactionWatchdog = undefined;
+    }
+  }
+
+  get isTransactionActive(): boolean {
+    return this.#transaction !== undefined;
+  }
+
+  get transactionDepth(): number {
+    return this.#transactionDepth;
+  }
 
   constructor(dbPath?: string) {
     super();
@@ -103,23 +120,61 @@ export default class DatabaseCore extends DatabaseBase {
   }
 
   async close() {
+    this.#clearTransactionWatchdog();
     if (this.#transaction) {
-      await this.rollbackTransaction();
+      this.#transactionDepth = 1;
+      try {
+        await this.rollbackTransaction();
+      } catch (error) {
+        console.error('Failed to rollback active transaction on close:', error);
+      }
     }
-    await this.knex!.destroy();
+    const knexToDestroy = this.#baseKnex ?? this.knex;
+    this.#baseKnex = undefined;
+    this.knex = undefined;
+    if (knexToDestroy) {
+      await knexToDestroy.destroy();
+    }
   }
 
   async beginTransaction() {
+    if (!this.#baseKnex) {
+      throw new Error('Database is not connected');
+    }
     if (this.#transaction) {
       // Nested document submit/cancel hooks reuse the transaction. All DB calls
       // through this shared core also use its Knex transaction while it is open.
       this.#transactionDepth += 1;
       return;
     }
-    this.#transaction = await this.#baseKnex!.transaction();
-    this.#transactionDepth = 1;
+    this.#clearTransactionWatchdog();
     this.#transactionFailed = false;
+    this.#transaction = await this.#baseKnex.transaction();
+    this.#transactionDepth = 1;
     this.knex = this.#transaction as unknown as Knex;
+
+    if (this.transactionTimeoutMs > 0) {
+      this.#transactionWatchdog = setTimeout(async () => {
+        if (!this.#transaction) {
+          return;
+        }
+        console.error(
+          `DatabaseCore transaction watchdog timed out after ${this.transactionTimeoutMs}ms. Auto-aborting transaction.`
+        );
+        try {
+          this.#transactionDepth = 1;
+          await this.rollbackTransaction();
+        } catch (error) {
+          console.error(
+            'Failed to auto-rollback timed out transaction:',
+            error
+          );
+        }
+      }, this.transactionTimeoutMs);
+      if (typeof this.#transactionWatchdog.unref === 'function') {
+        this.#transactionWatchdog.unref();
+      }
+    }
   }
 
   async commitTransaction() {
@@ -130,6 +185,7 @@ export default class DatabaseCore extends DatabaseBase {
       this.#transactionDepth -= 1;
       return;
     }
+    this.#clearTransactionWatchdog();
     const transaction = this.#transaction;
     try {
       if (this.#transactionFailed) {
@@ -140,13 +196,16 @@ export default class DatabaseCore extends DatabaseBase {
       }
       await transaction.commit();
     } catch (error) {
-      try {
-        await transaction.rollback();
-      } catch {
-        // A failed commit may already have completed or invalidated the transaction.
+      if (!transaction.isCompleted()) {
+        try {
+          await transaction.rollback();
+        } catch {
+          // A failed commit may already have completed or invalidated the transaction.
+        }
       }
       throw error;
     } finally {
+      this.#clearTransactionWatchdog();
       this.#transaction = undefined;
       this.#transactionDepth = 0;
       this.#transactionFailed = false;
@@ -163,10 +222,16 @@ export default class DatabaseCore extends DatabaseBase {
       this.#transactionFailed = true;
       return;
     }
+    this.#clearTransactionWatchdog();
     const transaction = this.#transaction;
     try {
-      await transaction.rollback();
+      if (!transaction.isCompleted()) {
+        await transaction.rollback();
+      }
+    } catch {
+      // Transaction may already be finished or aborted.
     } finally {
+      this.#clearTransactionWatchdog();
       this.#transaction = undefined;
       this.#transactionDepth = 0;
       this.#transactionFailed = false;

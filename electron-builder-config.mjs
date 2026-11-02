@@ -14,8 +14,16 @@ const root = dirname; // redundant, but is meant to keep with the previous line
 const buildDirPath = path.join(root, 'dist_electron', 'build');
 const packageDirPath = path.join(root, 'dist_electron', 'bundled');
 
+const githubPublishConfig = [
+  {
+    provider: 'github',
+    owner: 'sifat-939',
+    repo: 'veyro',
+  },
+];
+
 const frappeBooksConfig = {
-  productName: 'Nivo',
+  productName: 'VEYRO',
   // Retain the installation identity for compatibility with existing data.
   appId: 'io.frappe.books',
   artifactName: '${productName}-v${version}-${os}-${arch}.${ext}',
@@ -31,6 +39,7 @@ const frappeBooksConfig = {
     output: packageDirPath,
     app: buildDirPath,
   },
+  publish: githubPublishConfig,
   mac: {
     type: 'distribution',
     artifactName: '${productName}-v${version}-mac-${arch}.${ext}',
@@ -44,14 +53,14 @@ const frappeBooksConfig = {
     darkModeSupport: false,
     entitlements: 'build/entitlements.mac.plist',
     entitlementsInherit: 'build/entitlements.mac.plist',
-    publish: null,
+    publish: githubPublishConfig,
   },
   win: {
     publisherName: 'Frappe Technologies Pvt. Ltd.',
     artifactName: '${productName}-v${version}-windows-${arch}.${ext}',
     signDlls: true,
     icon: 'build/icon.ico',
-    publish: null,
+    publish: githubPublishConfig,
     target: [
       {
         target: 'nsis',
@@ -70,7 +79,7 @@ const frappeBooksConfig = {
     allowToChangeInstallationDirectory: true,
     installerIcon: 'build/installerIcon.ico',
     uninstallerIcon: 'build/uninstallerIcon.ico',
-    publish: null,
+    publish: githubPublishConfig,
   },
   portable: {
     artifactName: '${productName}-v${version}-windows-${arch}-portable.${ext}',
@@ -79,7 +88,7 @@ const frappeBooksConfig = {
     icon: 'build/icons',
     artifactName: '${productName}-v${version}-linux-${arch}.${ext}',
     category: 'Finance',
-    publish: null,
+    publish: githubPublishConfig,
     target: [
       {
         target: 'deb',

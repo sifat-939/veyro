@@ -19,21 +19,22 @@
       "
       style="height: 700px"
     >
-      <!-- Welcome to Nivo -->
-      <div class="px-4 py-4 flex items-center gap-3">
+      <!-- Welcome to VEYRO -->
+      <div class="px-4 py-4 flex items-center gap-3.5">
         <img
-          src="../assets/brand/nivo-mark.png"
-          class="w-12 h-12 flex-shrink-0"
-          alt=""
+          src="../assets/brand/veyro-mark.png"
+          class="w-12 h-12 flex-shrink-0 object-contain"
+          alt="VEYRO"
           aria-hidden="true"
         />
         <div>
-          <h1 class="text-2xl font-semibold select-none dark:text-gray-25">
-            {{ t`Welcome to Nivo` }}
+          <h1 class="text-2xl font-bold select-none dark:text-gray-100 tracking-wide">
+            {{ t`Welcome to VEYRO` }}
           </h1>
-          <p class="text-gray-600 dark:text-gray-400 text-base select-none">
+          <p class="text-gray-600 dark:text-gray-400 text-sm select-none font-medium">
+            <span class="text-blue-600 dark:text-blue-400 font-semibold">Business, in Balance.</span> &bull;
             {{
-              t`Create a new company or select an existing one from your computer`
+              t`Create a new company or select an existing one`
             }}
           </p>
         </div>
@@ -134,7 +135,7 @@
             {{ t`Create Demo` }}
           </p>
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            {{ t`Create a demo company to try out Nivo` }}
+            {{ t`Create a demo company to try out VEYRO` }}
           </p>
         </div>
       </div>

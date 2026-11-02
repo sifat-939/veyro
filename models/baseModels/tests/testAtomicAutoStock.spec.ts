@@ -134,4 +134,61 @@ test('invoice auto shipment is a nested submit in the invoice transaction', asyn
   t.equal(failedLinks.length, 0, 'rollback removes the nested shipment');
 });
 
+test('nested shipment failure rolls back parent invoice atomically and preserves singles', async (t) => {
+  const itemName = 'Atomic Stock Item';
+  const locationName = 'Atomic Stock Location';
+  const partyName = 'Atomic Stock Customer';
+
+  const stockBefore = await fyo.db.getStockQuantity(itemName, locationName);
+
+  const failingNestedInvoice = fyo.doc.getNewDoc(ModelNameEnum.SalesInvoice, {
+    party: partyName,
+    date: new Date('2025-01-04'),
+    account: 'Debtors',
+  }) as Invoice;
+  await failingNestedInvoice.append('items', {
+    item: itemName,
+    location: locationName,
+    quantity: 1,
+    rate: 100,
+  });
+  await failingNestedInvoice.runFormulas();
+  await failingNestedInvoice.sync();
+
+  const getStockTransfer = failingNestedInvoice.getStockTransfer.bind(failingNestedInvoice);
+  failingNestedInvoice.getStockTransfer = async (create?: boolean) => {
+    const st = await getStockTransfer(create);
+    if (st) {
+      st.beforeSubmit = async () => {
+        throw new Error('forced failure inside nested shipment beforeSubmit');
+      };
+    }
+    return st;
+  };
+
+  try {
+    await failingNestedInvoice.submit();
+    t.fail('invoice submit should fail when nested shipment fails');
+  } catch (error) {
+    t.match(
+      String(error),
+      /forced failure inside nested shipment/,
+      'nested failure error propagated to caller'
+    );
+  }
+
+  t.notOk(failingNestedInvoice.submitted, 'failing parent invoice remains draft');
+  t.equal(
+    await fyo.db.getStockQuantity(itemName, locationName),
+    stockBefore,
+    'stock unchanged after nested submit failure'
+  );
+  t.equal(fyo.doc.lifecycleDepth, 0, 'lifecycle depth restored to 0');
+  t.notOk(fyo.doc.isLifecycleActive, 'lifecycle active flag restored to false');
+
+  // Verify singles were preserved and are accessible after rollback
+  const invSettings = await fyo.doc.getDoc(ModelNameEnum.InventorySettings);
+  t.ok(invSettings, 'InventorySettings single doc is preserved after rollback');
+});
+
 closeTestFyo(fyo, __filename);

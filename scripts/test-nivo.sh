@@ -11,6 +11,8 @@ exec ./node_modules/.bin/electron --require ts-node/register --require tsconfig-
   ./node_modules/.bin/tape \
   tests/testSetupInstance.spec.ts \
   tests/testStandardPrint.spec.ts \
+  tests/testPartyQuickPayment.spec.ts \
+  tests/testPartyHubEngine.spec.ts \
   src/utils/tests/testAuditFollowup.spec.ts \
   tests/testHRAccounting.spec.ts \
   models/baseModels/tests/testInvoice.spec.ts \
@@ -33,4 +35,6 @@ exec ./node_modules/.bin/electron --require ts-node/register --require tsconfig-
   main/tests/appProtocol.spec.ts \
   main/tests/printCleanup.spec.ts \
   main/tests/partyStatement.spec.ts \
-  main/tests/importReconciliation.spec.ts
+  main/tests/importReconciliation.spec.ts \
+  main/tests/autoUpdater.spec.ts \
+  main/tests/windowLifecycle.spec.ts

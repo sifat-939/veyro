@@ -9,6 +9,7 @@ import {
   assertThrows,
 } from 'backend/database/tests/helpers';
 import { PurchaseInvoice } from '../PurchaseInvoice/PurchaseInvoice';
+import { calculateInvoiceFinancialAmounts } from '../Invoice/Invoice';
 
 const fyo = getTestFyo();
 setupTestFyo(fyo, __filename);
@@ -558,6 +559,285 @@ test('failed sync releases formula syncing state before retry', async (t) => {
   invoice.beforeSync = beforeSync;
   await invoice.sync();
   t.notOk(invoice.isSyncing, 'retry leaves normal syncing state');
+});
+
+test('invoice financial amounts enforce tri-state invariants on real documents across draft, submitted, and cancelled states', async (t) => {
+  const invoice = fyo.doc.getNewDoc(ModelNameEnum.SalesInvoice, {
+    account: 'Debtors',
+    party: partyData.name,
+    makeAutoPayment: false,
+    items: [{ item: 'Service', rate: 100, quantity: 2 }],
+  }) as SalesInvoice;
+  await invoice.runFormulas();
+  await invoice.sync();
+
+  // 1. Draft state (not submitted)
+  t.notOk(invoice.isSubmitted, 'invoice is draft');
+  t.notOk(invoice.isCancelled, 'invoice is not cancelled');
+  const draftAmounts = invoice.getFinancialAmounts();
+  t.equal(
+    draftAmounts.finalAmount.float,
+    200,
+    'draft finalAmount reflects grand total'
+  );
+  t.equal(draftAmounts.paidAmount.float, 0, 'draft paidAmount is 0');
+  t.equal(draftAmounts.dueAmount.float, 200, 'draft dueAmount is fully due');
+
+  // 2. Submitted state - unpaid
+  await invoice.submit();
+  t.ok(invoice.isSubmitted, 'invoice is submitted');
+  t.notOk(invoice.isCancelled, 'invoice is not cancelled');
+  const submittedAmounts = invoice.getFinancialAmounts();
+  t.equal(
+    submittedAmounts.finalAmount.float,
+    200,
+    'submitted unpaid finalAmount reflects grand total'
+  );
+  t.equal(
+    submittedAmounts.paidAmount.float,
+    0,
+    'submitted unpaid paidAmount is 0'
+  );
+  t.equal(
+    submittedAmounts.dueAmount.float,
+    200,
+    'submitted unpaid dueAmount equals outstanding'
+  );
+
+  // 3. Submitted state - partially paid
+  const accountingSettings = await fyo.doc.getDoc(
+    ModelNameEnum.AccountingSettings
+  );
+  const originalPartial = Boolean(accountingSettings.enablePartialPayment);
+  await accountingSettings.setAndSync('enablePartialPayment', true);
+
+  const payment = invoice.getPayment() as Payment;
+  await payment.runFormulas();
+  await payment.set('amount', fyo.pesa(75));
+  await payment.sync();
+  await payment.submit();
+
+  const partlyPaidAmounts = invoice.getFinancialAmounts();
+  t.equal(
+    partlyPaidAmounts.finalAmount.float,
+    200,
+    'partly paid finalAmount is unchanged'
+  );
+  t.equal(
+    partlyPaidAmounts.paidAmount.float,
+    75,
+    'partly paid paidAmount reflects settled portion'
+  );
+  t.equal(
+    partlyPaidAmounts.dueAmount.float,
+    125,
+    'partly paid dueAmount reflects outstanding balance'
+  );
+
+  // 4. Cancel payment to restore unpaid submitted state
+  await payment.cancel();
+  await accountingSettings.setAndSync('enablePartialPayment', originalPartial);
+  const restoredAmounts = invoice.getFinancialAmounts();
+  t.equal(restoredAmounts.dueAmount.float, 200, 'unpaid dueAmount restored');
+  t.equal(restoredAmounts.paidAmount.float, 0, 'unpaid paidAmount restored');
+
+  // 5. Cancelled state
+  await invoice.cancel();
+  t.ok(invoice.isCancelled, 'invoice is cancelled');
+  const cancelledAmounts = invoice.getFinancialAmounts();
+  t.equal(
+    cancelledAmounts.finalAmount.float,
+    200,
+    'cancelled finalAmount retains absolute grand total'
+  );
+  t.equal(cancelledAmounts.paidAmount.float, 0, 'cancelled paidAmount is zero');
+  t.equal(cancelledAmounts.dueAmount.float, 0, 'cancelled dueAmount is zero');
+
+  // 6. Real PurchaseInvoice model test
+  const pinv = fyo.doc.getNewDoc(ModelNameEnum.PurchaseInvoice, {
+    account: 'Creditors',
+    party: partyData.name,
+    items: [{ item: 'Service', rate: 150, quantity: 1 }],
+  }) as PurchaseInvoice;
+  await pinv.runFormulas();
+  await pinv.sync();
+
+  const pinvDraftAmounts = pinv.getFinancialAmounts();
+  t.equal(
+    pinvDraftAmounts.finalAmount.float,
+    150,
+    'purchase invoice draft finalAmount is 150'
+  );
+  t.equal(
+    pinvDraftAmounts.paidAmount.float,
+    0,
+    'purchase invoice draft paidAmount is 0'
+  );
+  t.equal(
+    pinvDraftAmounts.dueAmount.float,
+    150,
+    'purchase invoice draft dueAmount is 150'
+  );
+
+  await pinv.submit();
+  const pinvSubmittedAmounts = pinv.getFinancialAmounts();
+  t.equal(
+    pinvSubmittedAmounts.finalAmount.float,
+    150,
+    'purchase invoice submitted finalAmount is 150'
+  );
+  t.equal(
+    pinvSubmittedAmounts.paidAmount.float,
+    0,
+    'purchase invoice submitted paidAmount is 0'
+  );
+  t.equal(
+    pinvSubmittedAmounts.dueAmount.float,
+    150,
+    'purchase invoice submitted dueAmount is 150'
+  );
+
+  // 7. PurchaseInvoice partly paid
+  const pinvAccountingSettings = await fyo.doc.getDoc(
+    ModelNameEnum.AccountingSettings
+  );
+  const origPinvPartial = Boolean(pinvAccountingSettings.enablePartialPayment);
+  await pinvAccountingSettings.setAndSync('enablePartialPayment', true);
+
+  const pinvPayment = pinv.getPayment() as Payment;
+  await pinvPayment.runFormulas();
+  await pinvPayment.set('amount', fyo.pesa(60));
+  await pinvPayment.sync();
+  await pinvPayment.submit();
+
+  const pinvPartlyPaidAmounts = pinv.getFinancialAmounts();
+  t.equal(
+    pinvPartlyPaidAmounts.finalAmount.float,
+    150,
+    'purchase invoice partly paid finalAmount is 150'
+  );
+  t.equal(
+    pinvPartlyPaidAmounts.paidAmount.float,
+    60,
+    'purchase invoice partly paid paidAmount is 60'
+  );
+  t.equal(
+    pinvPartlyPaidAmounts.dueAmount.float,
+    90,
+    'purchase invoice partly paid dueAmount is 90'
+  );
+
+  await pinvPayment.cancel();
+  await pinvAccountingSettings.setAndSync(
+    'enablePartialPayment',
+    origPinvPartial
+  );
+
+  await pinv.cancel();
+  const pinvCancelledAmounts = pinv.getFinancialAmounts();
+  t.equal(
+    pinvCancelledAmounts.finalAmount.float,
+    150,
+    'purchase invoice cancelled finalAmount is 150'
+  );
+  t.equal(
+    pinvCancelledAmounts.paidAmount.float,
+    0,
+    'purchase invoice cancelled paidAmount is 0'
+  );
+  t.equal(
+    pinvCancelledAmounts.dueAmount.float,
+    0,
+    'purchase invoice cancelled dueAmount is 0'
+  );
+});
+
+test('calculateInvoiceFinancialAmounts edge cases and invariants', (t) => {
+  const empty = calculateInvoiceFinancialAmounts({}, fyo);
+  t.equal(empty.finalAmount.float, 0, 'empty invoice has zero finalAmount');
+  t.equal(empty.paidAmount.float, 0, 'empty invoice has zero paidAmount');
+  t.equal(empty.dueAmount.float, 0, 'empty invoice has zero dueAmount');
+
+  const fromNull = calculateInvoiceFinancialAmounts(null as any, fyo);
+  t.equal(fromNull.finalAmount.float, 0, 'null invoice has zero finalAmount');
+  t.equal(fromNull.paidAmount.float, 0, 'null invoice has zero paidAmount');
+  t.equal(fromNull.dueAmount.float, 0, 'null invoice has zero dueAmount');
+
+  const fromUndefined = calculateInvoiceFinancialAmounts(undefined as any, fyo);
+  t.equal(
+    fromUndefined.finalAmount.float,
+    0,
+    'undefined invoice has zero finalAmount'
+  );
+  t.equal(
+    fromUndefined.paidAmount.float,
+    0,
+    'undefined invoice has zero paidAmount'
+  );
+  t.equal(
+    fromUndefined.dueAmount.float,
+    0,
+    'undefined invoice has zero dueAmount'
+  );
+
+  const rawRecord = calculateInvoiceFinancialAmounts(
+    {
+      baseGrandTotal: fyo.pesa(400),
+      outstandingAmount: fyo.pesa(150),
+      submitted: 1,
+    } as any,
+    fyo
+  );
+  t.equal(rawRecord.finalAmount.float, 400, 'raw record finalAmount');
+  t.equal(rawRecord.paidAmount.float, 250, 'raw record paidAmount');
+  t.equal(rawRecord.dueAmount.float, 150, 'raw record dueAmount');
+
+  const returnAmounts = calculateInvoiceFinancialAmounts(
+    {
+      baseGrandTotal: fyo.pesa(-500),
+      outstandingAmount: fyo.pesa(-200),
+      isSubmitted: true,
+    },
+    fyo
+  );
+  t.equal(
+    returnAmounts.finalAmount.float,
+    500,
+    'return finalAmount is positive'
+  );
+  t.equal(returnAmounts.paidAmount.float, 300, 'return paidAmount is 300');
+  t.equal(returnAmounts.dueAmount.float, 200, 'return dueAmount is positive');
+
+  const cancelledAmounts = calculateInvoiceFinancialAmounts(
+    {
+      baseGrandTotal: fyo.pesa(1000),
+      outstandingAmount: fyo.pesa(600),
+      isSubmitted: true,
+      isCancelled: true,
+    },
+    fyo
+  );
+  t.equal(cancelledAmounts.finalAmount.float, 1000);
+  t.equal(cancelledAmounts.paidAmount.float, 0, 'cancelled paid is 0');
+  t.equal(cancelledAmounts.dueAmount.float, 0, 'cancelled due is 0');
+
+  const overpaidDiff = calculateInvoiceFinancialAmounts(
+    {
+      baseGrandTotal: fyo.pesa(100),
+      outstandingAmount: fyo.pesa(150),
+      isSubmitted: true,
+    },
+    fyo
+  );
+  t.equal(overpaidDiff.finalAmount.float, 100);
+  t.equal(overpaidDiff.dueAmount.float, 150);
+  t.equal(
+    overpaidDiff.paidAmount.float,
+    0,
+    'paidAmount clamped at zero if due exceeds final'
+  );
+
+  t.end();
 });
 
 closeTestFyo(fyo, __filename);

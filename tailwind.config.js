@@ -1,14 +1,39 @@
 const fs = require('fs');
+const path = require('path');
 const colors = JSON.parse(
-  fs.readFileSync('colors.json', { encoding: 'utf-8' })
+  fs.readFileSync(path.join(__dirname, 'colors.json'), { encoding: 'utf-8' })
 );
 
 module.exports = {
   darkMode: 'class',
-  purge: false,
+  purge: {
+    enabled: process.env.NODE_ENV !== 'development',
+    content: [
+      path.join(__dirname, 'src/index.html'),
+      path.join(__dirname, 'src/**/*.{vue,js,ts,jsx,tsx}'),
+      path.join(__dirname, 'templates/**/*.html'),
+    ],
+    options: {
+      safelist: [
+        /^(bg|text|border)-(gray|orange|green|red|yellow|blue|indigo|pink|purple|teal)-(50|100|200|300|400|500|600|700|800|900)$/,
+        /(^|:)dark:(bg|text|border)-(gray|orange|green|red|yellow|blue|indigo|pink|purple|teal)-(50|100|200|300|400|500|600|700|800|900)$/,
+        /^(bg|text|border)-gray-(25|850|875|890)$/,
+        /(^|:)dark:(bg|text|border)-gray-(25|850|875|890)$/,
+        'bg-opacity-20',
+      ],
+    },
+  },
   theme: {
     fontFamily: {
       sans: ['Inter', 'sans-serif'],
+      mono: [
+        'ui-monospace',
+        'SFMono-Regular',
+        'Menlo',
+        'Monaco',
+        'Consolas',
+        'monospace',
+      ],
     },
     screens: {
       sm: '640px',

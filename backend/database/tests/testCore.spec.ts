@@ -680,3 +680,226 @@ test('nullable IN filters remain inside other query and delete conditions', asyn
     await db.close();
   }
 });
+
+test('transaction commit and rollback persist and revert changes correctly', async (t) => {
+  const db = await getDb();
+  try {
+    // Commit scenario
+    await db.beginTransaction();
+    t.equal(db.isTransactionActive, true, 'transaction is active');
+    t.equal(db.transactionDepth, 1, 'transaction depth is 1');
+    await db.insert('Customer', {
+      name: 'tx-commit-user',
+      email: 'commit@test.com',
+      ...getDefaultMetaFieldValueMap(),
+    });
+    await db.commitTransaction();
+    t.equal(db.isTransactionActive, false, 'transaction is no longer active');
+    t.equal(db.transactionDepth, 0, 'transaction depth is 0');
+    t.equal(await db.exists('Customer', 'tx-commit-user'), true, 'committed row exists');
+
+    // Rollback scenario
+    await db.beginTransaction();
+    await db.insert('Customer', {
+      name: 'tx-rollback-user',
+      email: 'rollback@test.com',
+      ...getDefaultMetaFieldValueMap(),
+    });
+    await db.rollbackTransaction();
+    t.equal(db.isTransactionActive, false, 'transaction is no longer active after rollback');
+    t.equal(await db.exists('Customer', 'tx-rollback-user'), false, 'rolled back row does not exist');
+  } finally {
+    await db.close();
+  }
+});
+
+test('transaction watchdog timer auto-aborts abandoned transaction and prevents lockups', async (t) => {
+  const db = await getDb();
+  try {
+    db.transactionTimeoutMs = 60; // 60ms timeout for test
+    await db.beginTransaction();
+    t.equal(db.isTransactionActive, true, 'transaction began');
+
+    await db.insert('Customer', {
+      name: 'tx-abandoned-user',
+      email: 'abandoned@test.com',
+      ...getDefaultMetaFieldValueMap(),
+    });
+
+    // Wait for watchdog to trigger (60ms timeout + buffer)
+    await sleep(120);
+
+    t.equal(db.isTransactionActive, false, 'watchdog auto-aborted the active transaction');
+    t.equal(db.transactionDepth, 0, 'transaction depth reset to 0');
+    t.equal(
+      await db.exists('Customer', 'tx-abandoned-user'),
+      false,
+      'abandoned insert was rolled back by watchdog'
+    );
+
+    // Verify database is completely operational and not locked
+    await db.insert('Customer', {
+      name: 'tx-after-watchdog',
+      email: 'after@test.com',
+      ...getDefaultMetaFieldValueMap(),
+    });
+    t.equal(
+      await db.exists('Customer', 'tx-after-watchdog'),
+      true,
+      'database is fully functional after watchdog abort'
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test('watchdog timer is cleared upon normal commit and rollback', async (t) => {
+  const db = await getDb();
+  try {
+    db.transactionTimeoutMs = 80;
+
+    // Normal commit clears watchdog
+    await db.beginTransaction();
+    await db.insert('Customer', {
+      name: 'tx-cleared-commit',
+      email: 'clear-commit@test.com',
+      ...getDefaultMetaFieldValueMap(),
+    });
+    await db.commitTransaction();
+    t.equal(db.isTransactionActive, false);
+
+    // Sleep past the watchdog duration to ensure watchdog does not fire after completion
+    await sleep(120);
+    t.equal(
+      await db.exists('Customer', 'tx-cleared-commit'),
+      true,
+      'committed data remains intact without late watchdog abort'
+    );
+
+    // Normal rollback clears watchdog
+    await db.beginTransaction();
+    await db.rollbackTransaction();
+    await sleep(120);
+    t.equal(db.isTransactionActive, false);
+  } finally {
+    await db.close();
+  }
+});
+
+test('nested transactions handle failure state and reset cleanly in finally block', async (t) => {
+  const db = await getDb();
+  try {
+    await db.beginTransaction();
+    t.equal(db.transactionDepth, 1);
+
+    await db.beginTransaction();
+    t.equal(db.transactionDepth, 2, 'nested transaction depth is 2');
+
+    // Inner failure rolls back nested level
+    await db.rollbackTransaction();
+    t.equal(db.transactionDepth, 1, 'nested rollback decrements depth');
+
+    // Outer commit must detect nested failure, trigger full rollback and throw
+    let commitFailed = false;
+    try {
+      await db.commitTransaction();
+    } catch (error) {
+      commitFailed = true;
+      t.match((error as Error).message, /nested operation failed/);
+    }
+    t.equal(commitFailed, true, 'outer commit was rejected due to nested failure');
+    t.equal(db.isTransactionActive, false, 'transaction cleanly closed');
+    t.equal(db.transactionDepth, 0, 'depth cleanly reset');
+
+    // Subsequent transaction must succeed cleanly and not be poisoned by past failure
+    await db.beginTransaction();
+    await db.insert('Customer', {
+      name: 'tx-clean-slate',
+      email: 'cleanslate@test.com',
+      ...getDefaultMetaFieldValueMap(),
+    });
+    await db.commitTransaction();
+    t.equal(await db.exists('Customer', 'tx-clean-slate'), true, 'subsequent transaction succeeded');
+  } finally {
+    await db.close();
+  }
+});
+
+test('close is idempotent and handles active transactions and unconnected instances safely', async (t) => {
+  // Unconnected instance close
+  const unconnDb = new DatabaseCore(':memory:');
+  try {
+    await unconnDb.close();
+    t.pass('closing unconnected db succeeds without throwing');
+  } catch (err) {
+    t.fail(`closing unconnected db threw: ${err}`);
+  }
+
+  // Active transaction closed
+  const db = await getDb();
+  await db.beginTransaction();
+  t.equal(db.isTransactionActive, true);
+  await db.close();
+  t.equal(db.isTransactionActive, false, 'active transaction cleared on close');
+  t.equal(db.knex, undefined, 'knex cleared on close');
+
+  // Double close
+  try {
+    await db.close();
+    t.pass('calling close twice succeeds idempotently');
+  } catch (err) {
+    t.fail(`double close threw: ${err}`);
+  }
+
+  // beginTransaction on disconnected db throws clear error
+  try {
+    await db.beginTransaction();
+    t.fail('beginTransaction on closed db should throw');
+  } catch (err) {
+    t.equal((err as Error).message, 'Database is not connected');
+  }
+});
+
+test('nested transaction watchdog timeout aborts entire transaction and recovers cleanly', async (t) => {
+  const db = await getDb();
+  try {
+    db.transactionTimeoutMs = 60;
+    await db.beginTransaction();
+    t.equal(db.transactionDepth, 1);
+
+    await db.beginTransaction();
+    t.equal(db.transactionDepth, 2);
+
+    await db.insert('Customer', {
+      name: 'tx-nested-watchdog',
+      email: 'nested-watchdog@test.com',
+      ...getDefaultMetaFieldValueMap(),
+    });
+
+    await sleep(120);
+
+    t.equal(db.isTransactionActive, false, 'nested watchdog auto-aborted transaction');
+    t.equal(db.transactionDepth, 0, 'depth reset to 0');
+    t.equal(
+      await db.exists('Customer', 'tx-nested-watchdog'),
+      false,
+      'nested insert rolled back'
+    );
+
+    // Subsequent operation succeeds
+    await db.insert('Customer', {
+      name: 'tx-after-nested-watchdog',
+      email: 'after-nested@test.com',
+      ...getDefaultMetaFieldValueMap(),
+    });
+    t.equal(
+      await db.exists('Customer', 'tx-after-nested-watchdog'),
+      true,
+      'database is operational after nested watchdog abort'
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+

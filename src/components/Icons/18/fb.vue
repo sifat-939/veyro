@@ -1,8 +1,8 @@
 <template>
   <img
-    src="../../../assets/brand/nivo-mark.png"
+    src="../../../assets/brand/veyro-mark.png"
     class="w-5 h-5 object-contain"
-    alt="Nivo"
+    alt="VEYRO"
   />
 </template>
 <script>

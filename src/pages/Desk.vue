@@ -29,11 +29,11 @@ import { toggleSidebar } from 'src/utils/ui';
         dark:bg-gray-875
       "
     >
-      <router-view v-slot="{ Component }">
+      <router-view v-slot="{ Component, route }">
         <keep-alive>
           <component
             :is="Component"
-            :key="$route.path"
+            :key="route?.name === 'PartyHub' || route?.name === 'ReportsHub' ? (route.name as string) : route?.path || $route.path"
             :dark-mode="darkMode"
             class="flex-1"
           />

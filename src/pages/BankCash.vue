@@ -12,6 +12,12 @@
           <Button :disabled="loading" @click="loadAccounts">{{
             t`Refresh`
           }}</Button>
+          <Button @click="routeTo('/party-hub')">{{
+            t`Party Hub & Payments`
+          }}</Button>
+          <Button @click="routeTo('/list/Payment')">{{
+            t`Payments`
+          }}</Button>
           <Button @click="routeTo('/chart-of-accounts')">{{
             t`Manage Accounts`
           }}</Button>

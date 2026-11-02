@@ -78,6 +78,52 @@ export type InvoiceTaxItem = {
   taxAmount: Money;
 };
 
+export interface InvoiceFinancialAmounts {
+  finalAmount: Money;
+  paidAmount: Money;
+  dueAmount: Money;
+}
+
+export function calculateInvoiceFinancialAmounts(
+  invoice: {
+    baseGrandTotal?: Money;
+    outstandingAmount?: Money;
+    isSubmitted?: boolean;
+    isCancelled?: boolean;
+  },
+  fyo: Fyo
+): InvoiceFinancialAmounts {
+  const safeInvoice = invoice || {};
+  const toMoney = (val?: Money): Money => {
+    if (!val) return fyo.pesa(0);
+    return typeof (val as Money).abs === 'function'
+      ? val
+      : fyo.pesa(val as any);
+  };
+
+  const finalAmount = toMoney(safeInvoice.baseGrandTotal).abs();
+  const isCancelled = Boolean(
+    safeInvoice.isCancelled ?? (safeInvoice as any).cancelled
+  );
+  if (isCancelled) {
+    return {
+      finalAmount,
+      paidAmount: fyo.pesa(0),
+      dueAmount: fyo.pesa(0),
+    };
+  }
+
+  const isSubmitted = Boolean(
+    safeInvoice.isSubmitted ?? (safeInvoice as any).submitted
+  );
+  const dueAmount = isSubmitted
+    ? toMoney(safeInvoice.outstandingAmount).abs()
+    : finalAmount;
+  const difference = finalAmount.sub(dueAmount);
+  const paidAmount = difference.isNegative() ? fyo.pesa(0) : difference;
+  return { finalAmount, paidAmount, dueAmount };
+}
+
 export abstract class Invoice extends Transactional {
   _taxes: Record<string, Tax> = {};
   taxes?: TaxSummary[];
@@ -159,6 +205,18 @@ export abstract class Invoice extends Transactional {
     }
 
     return !this.baseGrandTotal?.eq(this.outstandingAmount!);
+  }
+
+  getFinancialAmounts(): InvoiceFinancialAmounts {
+    return calculateInvoiceFinancialAmounts(
+      {
+        baseGrandTotal: this.baseGrandTotal as Money,
+        outstandingAmount: this.outstandingAmount as Money,
+        isSubmitted: this.isSubmitted,
+        isCancelled: this.isCancelled,
+      },
+      this.fyo
+    );
   }
 
   get autoPaymentAccount(): string | null {
@@ -312,14 +370,14 @@ export abstract class Invoice extends Transactional {
     if (this.makeAutoPayment && this.autoPaymentAccount) {
       const payment = this.getPayment();
       await payment?.sync();
-      await payment?.submitInCurrentTransaction();
+      await payment?.submit();
       await this.load();
     }
 
     if (this.makeAutoStockTransfer && this.autoStockTransferLocation) {
       const stockTransfer = await this.getStockTransfer(true);
       await stockTransfer?.sync();
-      await stockTransfer?.submitInCurrentTransaction();
+      await stockTransfer?.submit();
       await this.load();
     }
 
@@ -361,7 +419,7 @@ export abstract class Invoice extends Transactional {
         'Payment',
         paymentId
       )) as Payment;
-      await paymentDoc.cancelInCurrentTransaction();
+      await paymentDoc.cancel();
     }
   }
 
@@ -890,28 +948,32 @@ export abstract class Invoice extends Transactional {
   }
 
   async updateUsedCountOfCoupons() {
-    await Promise.all(this.coupons?.map(async (coupon) => {
-      const couponDoc = await this.fyo.doc.getDoc(
-        ModelNameEnum.CouponCode,
-        coupon.coupons
-      );
+    await Promise.all(
+      this.coupons?.map(async (coupon) => {
+        const couponDoc = await this.fyo.doc.getDoc(
+          ModelNameEnum.CouponCode,
+          coupon.coupons
+        );
 
-      await couponDoc.setAndSync({ used: (couponDoc.used as number) + 1 });
-    }) ?? []);
+        await couponDoc.setAndSync({ used: (couponDoc.used as number) + 1 });
+      }) ?? []
+    );
   }
   async reduceUsedCountOfCoupons() {
     if (!this.coupons?.length) {
       return;
     }
 
-    await Promise.all(this.coupons?.map(async (coupon) => {
-      const couponDoc = await this.fyo.doc.getDoc(
-        ModelNameEnum.CouponCode,
-        coupon.coupons
-      );
+    await Promise.all(
+      this.coupons?.map(async (coupon) => {
+        const couponDoc = await this.fyo.doc.getDoc(
+          ModelNameEnum.CouponCode,
+          coupon.coupons
+        );
 
-      await couponDoc.setAndSync({ used: (couponDoc.used as number) - 1 });
-    }) ?? []);
+        await couponDoc.setAndSync({ used: (couponDoc.used as number) - 1 });
+      }) ?? []
+    );
   }
 
   async updateUsedCountOfLoyaltyProgram() {

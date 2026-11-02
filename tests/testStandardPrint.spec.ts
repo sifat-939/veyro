@@ -14,6 +14,11 @@ import {
   addStandardDocumentValues,
   getStatementValues,
 } from 'utils/standardPrintValues';
+import {
+  normalizeCurrencyText,
+  normalizePrintDate,
+  wordsWithCurrency,
+} from 'utils/printFormat';
 import { getTestFyo, setupTestFyo, closeTestFyo } from './helpers';
 
 const template = fs.readFileSync(
@@ -327,5 +332,61 @@ test('voucher policies have document-specific columns and never request another 
     t.equal(view.showTerms, false);
     t.ok(Array.isArray(view.printMetaRight));
   }
+});
+test('unified printFormat centralizes currency, date and words formatting', (t) => {
+  t.equal(normalizeCurrencyText('৳ 500.00'), 'Tk. 500.00');
+  t.equal(normalizeCurrencyText('৳500.00'), 'Tk. 500.00');
+  t.equal(normalizeCurrencyText('৳   1,250.75'), 'Tk. 1,250.75');
+  t.equal(normalizeCurrencyText('$ 100.00'), '$ 100.00');
+  t.equal(normalizeCurrencyText(''), '');
+  t.equal(normalizeCurrencyText(100), '100');
+  t.equal(normalizeCurrencyText(0), '0');
+  t.equal(normalizeCurrencyText(null), '');
+  t.equal(normalizeCurrencyText(undefined), '');
+
+  t.equal(normalizePrintDate('2026-03-15'), '15 Mar 2026');
+  t.equal(normalizePrintDate('2026-03-15T12:00:00'), '15 Mar 2026');
+  t.equal(normalizePrintDate(new Date(2026, 2, 15)), '15 Mar 2026');
+  t.equal(normalizePrintDate(1773532800000), '15 Mar 2026');
+  t.equal(normalizePrintDate(''), '');
+  t.equal(normalizePrintDate(null), '');
+  t.equal(normalizePrintDate(undefined), '');
+  t.equal(normalizePrintDate(new Date(NaN)), '');
+  t.equal(normalizePrintDate('invalid-date'), '');
+
+  t.equal(
+    wordsWithCurrency(1250, 'BDT'),
+    'One Thousand Two Hundred And Fifty Taka Only'
+  );
+  t.equal(
+    wordsWithCurrency(1250.5, 'BDT'),
+    'One Thousand Two Hundred And Fifty Taka and Fifty Paisa Only'
+  );
+  t.equal(wordsWithCurrency(500, 'INR'), 'Five Hundred Rupees Only');
+  t.equal(
+    wordsWithCurrency(500.5, 'INR'),
+    'Five Hundred Rupees and Fifty Paisa Only'
+  );
+  t.equal(wordsWithCurrency(100, 'USD'), 'One Hundred Dollars Only');
+  t.equal(
+    wordsWithCurrency(100.25, 'USD'),
+    'One Hundred Dollars and Twenty Five Cents Only'
+  );
+  t.equal(wordsWithCurrency(50, 'EUR'), 'Fifty Euros Only');
+  t.equal(
+    wordsWithCurrency(50.75, 'EUR'),
+    'Fifty Euros and Seventy Five Cents Only'
+  );
+  t.equal(wordsWithCurrency(75, undefined, 'BDT'), 'Seventy Five Taka Only');
+  t.equal(wordsWithCurrency(100, 'GBP'), 'One Hundred GBP Only');
+  t.equal(
+    wordsWithCurrency(100.5, 'GBP'),
+    'One Hundred GBP and Fifty Pence Only'
+  );
+  t.equal(wordsWithCurrency(0, 'BDT'), 'Zero Taka Only');
+  t.equal(wordsWithCurrency(0.5, 'USD'), 'Zero Dollars and Fifty Cents Only');
+  t.equal(wordsWithCurrency(100), 'One Hundred only');
+  t.equal(wordsWithCurrency(100.5), 'One Hundred and Fifty Paisa only');
+  t.end();
 });
 closeTestFyo(fyo, __filename);

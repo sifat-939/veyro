@@ -103,6 +103,9 @@ async function updateAccountingSettings(
     bankName,
     fiscalYearStart,
     fiscalYearEnd,
+    enableDiscounting: true,
+    enableInventory: true,
+    enablePartialPayment: true,
   });
   return accountingSettings;
 }

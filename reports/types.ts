@@ -80,6 +80,7 @@ export interface Account {
   rootType: AccountRootType;
   isGroup: boolean;
   parentAccount: string | null;
+  accountType?: string;
 }
 
 export type AccountTree = Record<string, AccountTreeNode>;

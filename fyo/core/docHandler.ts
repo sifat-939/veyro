@@ -19,6 +19,15 @@ export class DocHandler {
   #lifecycleEvents: (() => void)[] = [];
   #lifecycleRollbacks: (() => Promise<void>)[] = [];
   #lifecycleActive = false;
+  #lifecycleDepth = 0;
+
+  get lifecycleDepth(): number {
+    return this.#lifecycleDepth;
+  }
+
+  get isLifecycleActive(): boolean {
+    return this.#lifecycleActive;
+  }
 
   constructor(fyo: Fyo) {
     this.fyo = fyo;
@@ -26,37 +35,66 @@ export class DocHandler {
   }
 
   async runLifecycle<T>(callback: () => Promise<T>): Promise<T> {
+    if (this.#lifecycleDepth > 0) {
+      this.#lifecycleDepth += 1;
+      try {
+        return await callback();
+      } finally {
+        this.#lifecycleDepth -= 1;
+      }
+    }
+
     let release!: () => void;
     const previous = this.#lifecycleQueue;
     this.#lifecycleQueue = new Promise<void>((resolve) => (release = resolve));
     await previous;
+    this.#lifecycleDepth = 1;
     this.#lifecycleActive = true;
     this.#lifecycleEvents = [];
     this.#lifecycleRollbacks = [];
-    const loadedSingles = Object.keys(this.singles);
     let committed = false;
     try {
       const result = await callback();
       committed = true;
       this.#lifecycleActive = false;
       for (const event of this.#lifecycleEvents) {
-        event();
+        try {
+          event();
+        } catch (eventError) {
+          console.error('Lifecycle event error:', eventError);
+        }
       }
+      this.#lifecycleRollbacks = [];
       return result;
     } catch (error) {
       if (!committed) {
-        for (const rollback of this.#lifecycleRollbacks.reverse()) {
-          await rollback();
+        const loadedSingles = Object.keys(this.singles);
+        const rollbacks = [...this.#lifecycleRollbacks].reverse();
+        for (const rollback of rollbacks) {
+          try {
+            await rollback();
+          } catch (rollbackError) {
+            console.error('Lifecycle rollback error:', rollbackError);
+          }
         }
         this.clearCache();
         // Settings are read synchronously throughout the models. Restore their
         // persisted values after rollback rather than leaving them unavailable.
         for (const schemaName of loadedSingles) {
-          await this.getDoc(schemaName);
+          try {
+            await this.getDoc(schemaName);
+          } catch (singleError) {
+            console.error(
+              'Failed to reload single after rollback:',
+              schemaName,
+              singleError
+            );
+          }
         }
       }
       throw error;
     } finally {
+      this.#lifecycleDepth = 0;
       this.#lifecycleActive = false;
       this.#lifecycleEvents = [];
       this.#lifecycleRollbacks = [];

@@ -7,7 +7,7 @@
       </div>
 
       <!-- Chart Legend -->
-      <div v-if="hasData" class="flex text-base gap-8">
+      <div v-if="hasData" class="flex items-center text-sm gap-6">
         <div class="flex items-center gap-2">
           <span
             class="w-3 h-3 rounded-sm inline-block bg-blue-500 dark:bg-blue-600"
@@ -19,6 +19,15 @@
             class="w-3 h-3 rounded-sm inline-block bg-pink-500 dark:bg-pink-600"
           />
           <span class="text-gray-900 dark:text-gray-25">{{ t`Outflow` }}</span>
+        </div>
+        <div class="flex items-center gap-1.5 font-medium">
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{ t`Net Cash:` }}</span>
+          <span
+            class="text-xs font-mono font-semibold"
+            :class="netCashflow >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-pink-600 dark:text-pink-400'"
+          >
+            {{ formatCurrency(netCashflow) }}
+          </span>
         </div>
       </div>
       <div v-else class="w-16 h-5 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -85,6 +94,7 @@ export default defineComponent({
     periodList: [],
     periodOptions: ['This Year', 'This Quarter', 'YTD'],
     hasData: false,
+    netCashflow: 0,
   }),
   computed: {
     chartData() {
@@ -133,6 +143,16 @@ export default defineComponent({
       );
 
       const data = await fyo.db.getCashflow(fromDate.toISO(), toDate.toISO());
+      const totalInflow = (data || []).reduce(
+        (sum, row) => sum + (Number(row.inflow) || 0),
+        0
+      );
+      const totalOutflow = (data || []).reduce(
+        (sum, row) => sum + (Number(row.outflow) || 0),
+        0
+      );
+      this.netCashflow = totalInflow - totalOutflow;
+
       const dataMap = getMapFromList(data, 'yearmonth');
       this.data = periodList.map((p) => {
         const key = p.toFormat('yyyy-MM');
@@ -147,6 +167,9 @@ export default defineComponent({
           yearmonth: key,
         };
       });
+    },
+    formatCurrency(val: number) {
+      return fyo.format(val ?? 0, 'Currency');
     },
     async setHasData() {
       const accounts = await fyo.db.getAllRaw('Account', {

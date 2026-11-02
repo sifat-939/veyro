@@ -1,6 +1,7 @@
 import type { Doc } from 'fyo/model/doc';
 import type { Money } from 'pesa';
 import { buildStatement, dateKey, StatementEntry } from './standardPrint';
+import { normalizeCurrencyText, normalizePrintDate } from './printFormat';
 
 type PrintRow = Record<string, string | number | undefined>;
 type PrintTotal = {
@@ -41,22 +42,12 @@ function quantityLabel(value: unknown) {
       )
     : String(value || '');
 }
-const printMoney = (value: string) => value.replace(/৳\s*/g, 'Tk. ');
+const printMoney = normalizeCurrencyText;
 const num = (v: unknown) =>
   v && typeof v === 'object' && 'float' in v
     ? (v as Money).float
     : Number(v || 0);
-export function printDate(value: Date | string) {
-  const key = dateKey(value);
-  const date = new Date(key + 'T00:00:00');
-  return Number.isNaN(date.valueOf())
-    ? key
-    : date.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-}
+export const printDate = normalizePrintDate;
 export async function addStandardDocumentValues(doc: Doc, values: Values) {
   const money = (value: number) =>
     printMoney(

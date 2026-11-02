@@ -26,31 +26,58 @@ export class Party extends Doc {
   async updateOutstandingAmount() {
     /**
      * If Role === "Both" then outstanding Amount
-     * will be the amount to be paid to the party.
+     * will be the net amount (receivable - payable).
+     * Direct payments without invoice allocations are factored into
+     * running party outstanding so invoice matching is never required.
      */
 
     const role = this.role as PartyRole;
     let outstandingAmount = this.fyo.pesa(0);
 
-    if (role === 'Customer' || role === 'Both') {
+    if (role === 'Customer') {
       const outstandingReceive = await this._getTotalOutstandingAmount(
         'SalesInvoice'
       );
-      outstandingAmount = outstandingAmount.add(outstandingReceive);
+      const unallocatedReceive = await this._getUnallocatedPaymentAmount(
+        'Receive'
+      );
+      const unallocatedPay = await this._getUnallocatedPaymentAmount('Pay');
+      outstandingAmount = outstandingAmount
+        .add(outstandingReceive)
+        .sub(unallocatedReceive)
+        .add(unallocatedPay);
     }
 
     if (role === 'Supplier') {
       const outstandingPay = await this._getTotalOutstandingAmount(
         'PurchaseInvoice'
       );
-      outstandingAmount = outstandingAmount.add(outstandingPay);
+      const unallocatedPay = await this._getUnallocatedPaymentAmount('Pay');
+      const unallocatedReceive = await this._getUnallocatedPaymentAmount(
+        'Receive'
+      );
+      outstandingAmount = outstandingAmount
+        .add(outstandingPay)
+        .sub(unallocatedPay)
+        .add(unallocatedReceive);
     }
 
     if (role === 'Both') {
+      const outstandingReceive = await this._getTotalOutstandingAmount(
+        'SalesInvoice'
+      );
+      const unallocatedReceive = await this._getUnallocatedPaymentAmount(
+        'Receive'
+      );
+      const netReceivable = outstandingReceive.sub(unallocatedReceive);
+
       const outstandingPay = await this._getTotalOutstandingAmount(
         'PurchaseInvoice'
       );
-      outstandingAmount = outstandingAmount.sub(outstandingPay);
+      const unallocatedPay = await this._getUnallocatedPaymentAmount('Pay');
+      const netPayable = outstandingPay.sub(unallocatedPay);
+
+      outstandingAmount = netReceivable.sub(netPayable);
     }
 
     await this.setAndSync({ outstandingAmount });
@@ -118,6 +145,53 @@ export class Party extends Doc {
         this.fyo.pesa(outstandingAmount as number)
       )
       .reduce((a, b) => a.add(b), this.fyo.pesa(0));
+  }
+
+  async _getUnallocatedPaymentAmount(
+    paymentType: 'Receive' | 'Pay'
+  ): Promise<Money> {
+    const payments = (await this.fyo.db.getAllRaw(ModelNameEnum.Payment, {
+      fields: ['name', 'amount'],
+      filters: {
+        submitted: true,
+        cancelled: false,
+        party: this.name as string,
+        paymentType,
+      },
+    })) as Array<{ name: string; amount: number }>;
+
+    if (!payments.length) {
+      return this.fyo.pesa(0);
+    }
+
+    const paymentNames = payments.map((p) => String(p.name));
+    const allocations = (await this.fyo.db.getAllRaw(ModelNameEnum.PaymentFor, {
+      fields: ['parent', 'amount'],
+      filters: {
+        parent: ['in', paymentNames],
+      },
+    })) as Array<{ parent: string; amount: number }>;
+
+    const allocatedByPayment = new Map<string, Money>();
+    for (const alloc of allocations) {
+      const parent = String(alloc.parent);
+      const amt = this.fyo.pesa(alloc.amount ?? 0);
+      const current = allocatedByPayment.get(parent) || this.fyo.pesa(0);
+      allocatedByPayment.set(parent, current.add(amt));
+    }
+
+    let unallocatedTotal = this.fyo.pesa(0);
+    for (const p of payments) {
+      const totalAmt = this.fyo.pesa(p.amount ?? 0);
+      const allocatedAmt =
+        allocatedByPayment.get(String(p.name)) || this.fyo.pesa(0);
+      const unallocated = totalAmt.sub(allocatedAmt);
+      if (unallocated.gt(0)) {
+        unallocatedTotal = unallocatedTotal.add(unallocated);
+      }
+    }
+
+    return unallocatedTotal;
   }
 
   formulas: FormulaMap = {

@@ -26,20 +26,44 @@
 
     <div
       v-if="schemaName === 'Party'"
-      class="flex gap-4 p-4 border-b dark:border-gray-800"
+      class="flex flex-wrap items-center justify-between gap-3 p-3 border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-850"
     >
-      <FormControl
-        :df="{ fieldtype: 'Date', fieldname: 'from', label: 'From Date' }"
-        :show-label="true"
-        :value="fromDate"
-        @change="setStatementFrom"
-      />
-      <FormControl
-        :df="{ fieldtype: 'Date', fieldname: 'to', label: 'To Date' }"
-        :show-label="true"
-        :value="toDate"
-        @change="setStatementTo"
-      />
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="p-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-1 text-xs shadow-sm">
+          <button
+            v-for="preset in partyDatePresets"
+            :key="preset.value"
+            type="button"
+            class="px-2.5 py-1 rounded-md transition duration-150 font-medium whitespace-nowrap text-xs"
+            :class="
+              selectedPreset === preset.value
+                ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+            "
+            @click="applyPartyPreset(preset.value)"
+          >
+            {{ preset.label }}
+          </button>
+        </div>
+
+        <!-- Custom Date Range Controls -->
+        <div v-if="selectedPreset === 'custom'" class="flex items-center gap-2 text-xs bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <span class="text-xs text-gray-500 font-medium ps-1">{{ t`Range:` }}</span>
+          <input
+            v-model="fromDate"
+            type="date"
+            class="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+            @change="refreshStatement"
+          />
+          <span class="text-gray-400">→</span>
+          <input
+            v-model="toDate"
+            type="date"
+            class="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+            @change="refreshStatement"
+          />
+        </div>
+      </div>
     </div>
     <!-- Template Display Area -->
     <div class="overflow-auto custom-scroll custom-scroll-thumb1 p-4">
@@ -103,6 +127,7 @@ export default defineComponent({
     return {
       fromDate: '',
       toDate: dateKey(new Date()),
+      selectedPreset: 'all',
       doc: null,
       scale: 1,
       values: null,
@@ -112,6 +137,7 @@ export default defineComponent({
     } as {
       fromDate: string;
       toDate: string;
+      selectedPreset: 'all' | 'today' | 'yesterday' | 'this_month' | 'this_year' | 'custom';
       doc: null | Doc;
       scale: number;
       values: null | PrintValues;
@@ -121,10 +147,32 @@ export default defineComponent({
     };
   },
   computed: {
+    partyDatePresets(): Array<{ label: string; value: 'all' | 'today' | 'yesterday' | 'this_month' | 'this_year' | 'custom' }> {
+      return [
+        { label: this.t`All Time`, value: 'all' },
+        { label: this.t`Today`, value: 'today' },
+        { label: this.t`Yesterday`, value: 'yesterday' },
+        { label: this.t`This Month`, value: 'this_month' },
+        { label: this.t`This Year`, value: 'this_year' },
+        { label: this.t`Custom`, value: 'custom' },
+      ];
+    },
+    resolvedSchemaName(): string {
+      if (this.fyo.schemaMap[this.schemaName]) {
+        return this.schemaName;
+      }
+      const cleaned = this.schemaName.replace(/[\s\-_]+/g, '').toLowerCase();
+      for (const key of Object.keys(this.fyo.schemaMap)) {
+        if (key.toLowerCase() === cleaned) {
+          return key;
+        }
+      }
+      return this.schemaName;
+    },
     helperMessage() {
       if (!this.templateList.length) {
         const label =
-          this.fyo.schemaMap[this.schemaName]?.label ?? this.schemaName;
+          this.fyo.schemaMap[this.resolvedSchemaName]?.label ?? this.resolvedSchemaName;
 
         return this.t`No Print Templates not found for entry type ${label}`;
       }
@@ -194,7 +242,47 @@ export default defineComponent({
     this.reset();
   },
   methods: {
+    async applyPartyPreset(preset: 'all' | 'today' | 'yesterday' | 'this_month' | 'this_year' | 'custom') {
+      this.selectedPreset = preset;
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+
+      if (preset === 'all') {
+        this.fromDate = '';
+        this.toDate = '';
+      } else if (preset === 'today') {
+        const todayStr = dateKey(now);
+        this.fromDate = todayStr;
+        this.toDate = todayStr;
+      } else if (preset === 'yesterday') {
+        const yest = new Date();
+        yest.setDate(yest.getDate() - 1);
+        const yestStr = dateKey(yest);
+        this.fromDate = yestStr;
+        this.toDate = yestStr;
+      } else if (preset === 'this_month') {
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        this.fromDate = dateKey(firstDay);
+        this.toDate = dateKey(lastDay);
+      } else if (preset === 'this_year') {
+        const firstDay = new Date(year, 0, 1);
+        const lastDay = new Date(year, 11, 31);
+        this.fromDate = dateKey(firstDay);
+        this.toDate = dateKey(lastDay);
+      } else if (preset === 'custom') {
+        if (!this.fromDate && !this.toDate) {
+          const firstDay = new Date(year, month, 1);
+          const lastDay = new Date(year, month + 1, 0);
+          this.fromDate = dateKey(firstDay);
+          this.toDate = dateKey(lastDay);
+        }
+      }
+      await this.refreshStatement();
+    },
     async setStatementFrom(value: unknown) {
+      this.selectedPreset = 'custom';
       this.fromDate =
         value instanceof Date && !Number.isNaN(value.valueOf())
           ? dateKey(value)
@@ -204,6 +292,7 @@ export default defineComponent({
       await this.refreshStatement();
     },
     async setStatementTo(value: unknown) {
+      this.selectedPreset = 'custom';
       this.toDate =
         value instanceof Date && !Number.isNaN(value.valueOf())
           ? dateKey(value)
@@ -225,7 +314,21 @@ export default defineComponent({
       }
     },
     async initialize() {
-      this.doc = await fyo.doc.getDoc(this.schemaName, this.name);
+      if (this.$route.query.preset && typeof this.$route.query.preset === 'string') {
+        const p = this.$route.query.preset as 'all' | 'today' | 'yesterday' | 'this_month' | 'this_year' | 'custom';
+        if (['all', 'today', 'yesterday', 'this_month', 'this_year', 'custom'].includes(p)) {
+          this.selectedPreset = p;
+        }
+      } else if (this.$route.query.from || this.$route.query.to) {
+        this.selectedPreset = 'custom';
+      }
+      if (this.$route.query.from && typeof this.$route.query.from === 'string') {
+        this.fromDate = this.$route.query.from;
+      }
+      if (this.$route.query.to && typeof this.$route.query.to === 'string') {
+        this.toDate = this.$route.query.to;
+      }
+      this.doc = await fyo.doc.getDoc(this.resolvedSchemaName, this.name);
       await this.setTemplateList();
       await this.setTemplateFromDefault();
       if (!this.templateDoc && this.templateList.length) {
@@ -255,6 +358,8 @@ export default defineComponent({
       this.templateList = [];
       this.templateDoc = null;
       this.scale = 1;
+      this.fromDate = '';
+      this.toDate = dateKey(new Date());
     },
     async onTemplateNameChange(value: string | null): Promise<void> {
       if (!value) {

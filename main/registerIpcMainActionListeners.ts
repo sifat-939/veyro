@@ -1,4 +1,5 @@
 import {
+  BrowserWindow,
   MessageBoxOptions,
   OpenDialogOptions,
   SaveDialogOptions,
@@ -6,14 +7,19 @@ import {
   dialog,
   ipcMain,
 } from 'electron';
-import { autoUpdater } from 'electron-updater';
+import {
+  checkForAppUpdates,
+  downloadAppUpdate,
+  getUpdateState,
+  quitAndInstallAppUpdate,
+} from './registerAutoUpdaterListeners';
 import { constants } from 'fs';
 import fs from 'fs-extra';
 import path from 'path';
 import { SelectFileOptions, SelectFileReturn } from 'utils/types';
 import databaseManager from '../backend/database/manager';
 import { emitMainProcessError } from '../backend/helpers';
-import { Main } from '../main';
+import type { Main } from '../main';
 import { DatabaseMethod } from '../utils/db/types';
 import { IPC_ACTIONS } from '../utils/messages';
 import { getUrlAndTokenString, sendError } from './contactMothership';
@@ -169,7 +175,34 @@ async function ensureDailyBackups(dbPath: string) {
   }
 }
 
+const cleanedWindows = new WeakSet<object>();
+
+export function safeRollbackOrphanedTransaction() {
+  return databaseManager.call('rollbackTransaction').catch(() => {});
+}
+
+export function registerWindowCleanup(
+  win?: BrowserWindow | null,
+  cleanup: () => Promise<unknown> | void = safeRollbackOrphanedTransaction
+) {
+  if (!win || cleanedWindows.has(win)) return;
+  cleanedWindows.add(win);
+  if (typeof win.webContents?.on === 'function') {
+    win.webContents.on('render-process-gone', cleanup);
+  }
+  if (typeof win.on === 'function') {
+    win.on('closed', cleanup);
+  }
+}
+
 export default function registerIpcMainActionListeners(main: Main) {
+  registerWindowCleanup(main.window ?? main.mainWindow);
+  if (typeof app?.on === 'function') {
+    app.on('browser-window-created', (_event, win) => {
+      registerWindowCleanup(win);
+    });
+  }
+
   const dailyBackupTimer = setInterval(() => {
     const dbPath = databaseManager.db?.dbPath;
     if (dbPath && dbPath !== ':memory:' && !restoreInProgress) {
@@ -760,21 +793,20 @@ export default function registerIpcMainActionListeners(main: Main) {
     await sendError(bodyJson, main);
   });
 
-  ipcMain.handle(IPC_ACTIONS.CHECK_FOR_UPDATES, async () => {
-    if (!main.updatesEnabled || main.isDevelopment || main.checkedForUpdate) {
-      return;
-    }
+  ipcMain.handle(IPC_ACTIONS.CHECK_FOR_UPDATES, async (_, manual = false) => {
+    return await checkForAppUpdates(main, manual);
+  });
 
-    try {
-      await autoUpdater.checkForUpdates();
-    } catch (error) {
-      if (isNetworkError(error as Error)) {
-        return;
-      }
+  ipcMain.handle(IPC_ACTIONS.GET_UPDATE_STATUS, async () => {
+    return getUpdateState(main);
+  });
 
-      emitMainProcessError(error);
-    }
-    main.checkedForUpdate = true;
+  ipcMain.handle(IPC_ACTIONS.DOWNLOAD_UPDATE, async () => {
+    return await downloadAppUpdate(main);
+  });
+
+  ipcMain.handle(IPC_ACTIONS.QUIT_AND_INSTALL_UPDATE, async () => {
+    quitAndInstallAppUpdate();
   });
 
   ipcMain.handle(IPC_ACTIONS.GET_LANGUAGE_MAP, async (_, code: string) => {

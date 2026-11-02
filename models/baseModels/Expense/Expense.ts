@@ -10,15 +10,8 @@ import { getDocStatusListColumn, getLedgerLinkAction } from 'models/helpers';
 import { LedgerPosting } from 'models/Transactional/LedgerPosting';
 import { Transactional } from 'models/Transactional/Transactional';
 import { Money } from 'pesa';
-import { runPaidEntryAction } from 'models/Transactional/paidEntryGuard';
 
 export class Expense extends Transactional {
-  async submit() {
-    await runPaidEntryAction(this.fyo, () => super.submit());
-  }
-  async cancel() {
-    await runPaidEntryAction(this.fyo, () => super.cancel());
-  }
   amount?: Money;
   expenseAccount?: string;
   paidFrom?: string;

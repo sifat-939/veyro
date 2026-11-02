@@ -1024,9 +1024,9 @@ export class Doc extends Observable<DocValue | Doc[]> {
     return await this.fyo.doc.runLifecycle(() => this._submit());
   }
 
-  /** Used by a parent submit hook so this document shares its transaction. */
+  /** @deprecated Use `submit()` instead. */
   async submitInCurrentTransaction() {
-    return await this._submit();
+    return await this.submit();
   }
 
   private async _submit() {
@@ -1047,9 +1047,6 @@ export class Doc extends Observable<DocValue | Doc[]> {
       await this.fyo.db.commitTransaction();
     } catch (error) {
       await this.fyo.db.rollbackTransaction();
-      this.fyo.doc.clearCache();
-      await this.set('submitted', false);
-      await this.set('modified', modified as DocValue);
       throw error;
     }
 
@@ -1066,9 +1063,9 @@ export class Doc extends Observable<DocValue | Doc[]> {
     return await this.fyo.doc.runLifecycle(() => this._cancel());
   }
 
-  /** Used by a parent cancellation hook so this document shares its transaction. */
+  /** @deprecated Use `cancel()` instead. */
   async cancelInCurrentTransaction() {
-    return await this._cancel();
+    return await this.cancel();
   }
 
   private async _cancel() {
@@ -1089,9 +1086,6 @@ export class Doc extends Observable<DocValue | Doc[]> {
       await this.fyo.db.commitTransaction();
     } catch (error) {
       await this.fyo.db.rollbackTransaction();
-      this.fyo.doc.clearCache();
-      await this.set('cancelled', false);
-      await this.set('modified', modified as DocValue);
       throw error;
     }
 

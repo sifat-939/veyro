@@ -14,15 +14,8 @@ import { LedgerPosting } from 'models/Transactional/LedgerPosting';
 import { Transactional } from 'models/Transactional/Transactional';
 import { Money } from 'pesa';
 import { validateExpenseAccounts } from '../Expense/Expense';
-import { runPaidEntryAction } from 'models/Transactional/paidEntryGuard';
 
 export class SalaryPayment extends Transactional {
-  async submit() {
-    await runPaidEntryAction(this.fyo, () => super.submit());
-  }
-  async cancel() {
-    await runPaidEntryAction(this.fyo, () => super.cancel());
-  }
   employee?: string;
   salaryMonth?: Date;
   salary?: Money;

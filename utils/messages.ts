@@ -27,6 +27,9 @@ export enum IPC_ACTIONS {
   SEND_ERROR = 'send-error',
   GET_LANGUAGE_MAP = 'get-language-map',
   CHECK_FOR_UPDATES = 'check-for-updates',
+  DOWNLOAD_UPDATE = 'download-update',
+  QUIT_AND_INSTALL_UPDATE = 'quit-and-install-update',
+  GET_UPDATE_STATUS = 'get-update-status',
   CHECK_DB_ACCESS = 'check-db-access',
   SELECT_FILE = 'select-file',
   GET_CREDS = 'get-creds',
@@ -56,6 +59,7 @@ export enum IPC_CHANNELS {
   TRIGGER_ERPNEXT_SYNC = 'trigger-erpnext-sync',
   LOG_MAIN_PROCESS_ERROR = 'main-process-error',
   CONSOLE_LOG = 'console-log',
+  UPDATE_STATUS_CHANGED = 'update-status-changed',
 }
 
 export enum DB_CONN_FAILURE {

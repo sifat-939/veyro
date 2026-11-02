@@ -23,14 +23,14 @@
         "
       >
         <img
-          src="../assets/brand/nivo-mark.png"
-          class="w-8 h-8 flex-shrink-0 me-2"
-          alt=""
+          src="../assets/brand/veyro-mark.png"
+          class="w-8 h-8 flex-shrink-0 me-2 object-contain"
+          alt="VEYRO"
           aria-hidden="true"
         />
         <div class="min-w-0 flex-1">
-          <p class="nivo-wordmark text-xl font-semibold dark:text-gray-25">
-            Nivo
+          <p class="nivo-wordmark text-xl font-bold tracking-wider text-gray-900 dark:text-gray-100">
+            VEYRO
           </p>
           <h6
             data-testid="company-name"
@@ -87,6 +87,11 @@
           >
             {{ group.label }}
           </div>
+          <feather-icon
+            v-if="group.items"
+            :name="isGroupActive(group) ? 'chevron-down' : 'chevron-right'"
+            class="ms-auto w-4 h-4 text-gray-400"
+          />
         </div>
 
         <!-- Expanded Group -->
@@ -122,6 +127,28 @@
 
     <!-- Shortcuts and DB Switcher -->
     <div class="window-no-drag flex flex-col gap-2 py-2 px-4">
+      <button
+        data-testid="app-update"
+        class="
+          flex
+          text-sm
+          gap-1
+          items-center
+          transition-colors
+        "
+        :class="updateButtonClass"
+        :disabled="isUpdateDisabled"
+        :title="updateTooltip"
+        @click="onUpdateClick"
+      >
+        <feather-icon
+          :name="updateIcon"
+          class="h-4 w-4 flex-shrink-0"
+          :class="{ 'animate-spin': updateState.status === 'checking' }"
+        />
+        <p class="truncate">{{ updateLabel }}</p>
+      </button>
+
       <button
         class="
           flex
@@ -196,6 +223,7 @@ import { languageDirectionKey, shortcutsKey } from 'src/utils/injectionKeys';
 import { getSidebarConfig } from 'src/utils/sidebarConfig';
 import { SidebarConfig, SidebarItem, SidebarRoot } from 'src/utils/types';
 import { routeTo, toggleSidebar } from 'src/utils/ui';
+import { UpdateState } from 'utils/ipc/types';
 import { defineComponent, inject } from 'vue';
 import router from '../router';
 import Icon from './Icon.vue';
@@ -227,17 +255,114 @@ export default defineComponent({
       viewShortcuts: false,
       activeGroup: null,
       showDevMode: false,
+      unsubscribeUpdate: null as null | (() => void),
+      updateState: {
+        status: 'idle',
+        currentVersion: '',
+      } as UpdateState,
     } as {
       companyName: string;
       groups: SidebarConfig;
       viewShortcuts: boolean;
       activeGroup: null | SidebarRoot;
       showDevMode: boolean;
+      unsubscribeUpdate: null | (() => void);
+      updateState: UpdateState;
     };
   },
   computed: {
-    appVersion() {
+    appVersion(): string {
       return fyo.store.appVersion;
+    },
+    updateIcon(): string {
+      switch (this.updateState.status) {
+        case 'checking':
+          return 'refresh-cw';
+        case 'available':
+          return 'download';
+        case 'downloading':
+          return 'download';
+        case 'downloaded':
+          return 'check-circle';
+        case 'not-available':
+          return 'check-circle';
+        case 'error':
+          return 'alert-circle';
+        default:
+          return 'refresh-cw';
+      }
+    },
+    updateLabel(): string {
+      const version =
+        this.appVersion || this.updateState.currentVersion || '0.40.5';
+      switch (this.updateState.status) {
+        case 'checking':
+          return this.t`Checking...`;
+        case 'available':
+          return this.updateState.availableVersion
+            ? this.t`Update to v${this.updateState.availableVersion}`
+            : this.t`Update available`;
+        case 'downloading':
+          return typeof this.updateState.progress === 'number'
+            ? this.t`Downloading ${this.updateState.progress}%`
+            : this.t`Downloading...`;
+        case 'downloaded':
+          return this.t`Restart to install`;
+        case 'not-available':
+          return this.t`Up to date (v${version})`;
+        case 'error':
+          return this.t`Update check failed`;
+        default:
+          return this.t`Check for updates`;
+      }
+    },
+    updateTooltip(): string {
+      const version =
+        this.appVersion || this.updateState.currentVersion || '0.40.5';
+      switch (this.updateState.status) {
+        case 'checking':
+          return this.t`Checking for updates...`;
+        case 'available':
+          return this.updateState.availableVersion
+            ? this.t`Version ${this.updateState.availableVersion} is available. Click to download.`
+            : this.t`Update is available. Click to download.`;
+        case 'downloading':
+          return this.t`Downloading update (${this.updateState.progress ?? 0}%)...`;
+        case 'downloaded':
+          return this.t`Update downloaded. Click to restart VEYRO and apply update.`;
+        case 'not-available':
+          return this.t`VEYRO v${version} is up to date. Click to check again.`;
+        case 'error':
+          return this.updateState.error
+            ? this.t`${this.updateState.error}. Click to retry.`
+            : this.t`Update check failed. Click to retry.`;
+        default:
+          return this.t`VEYRO v${version}. Click to check for updates.`;
+      }
+    },
+    updateButtonClass(): string {
+      switch (this.updateState.status) {
+        case 'available':
+          return 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium';
+        case 'downloading':
+          return 'text-blue-600 dark:text-blue-400 cursor-wait';
+        case 'downloaded':
+          return 'text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium';
+        case 'checking':
+          return 'text-gray-500 dark:text-gray-400 cursor-wait';
+        case 'not-available':
+          return 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300';
+        case 'error':
+          return 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-medium';
+        default:
+          return 'text-gray-600 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-400';
+      }
+    },
+    isUpdateDisabled(): boolean {
+      return (
+        this.updateState.status === 'checking' ||
+        this.updateState.status === 'downloading'
+      );
     },
   },
   async mounted() {
@@ -257,9 +382,29 @@ export default defineComponent({
     });
 
     this.showDevMode = this.fyo.store.isDevelopment;
+
+    if (typeof ipc !== 'undefined') {
+      try {
+        const state = await ipc.getUpdateStatus?.();
+        if (state) {
+          this.updateState = state;
+        }
+      } catch {
+        // ignore
+      }
+      this.unsubscribeUpdate =
+        ipc.registerUpdateStatusListener?.(this.handleUpdateStatusChanged) ??
+        null;
+    }
   },
   unmounted() {
     this.shortcuts?.delete(COMPONENT_NAME);
+    if (this.unsubscribeUpdate) {
+      this.unsubscribeUpdate();
+      this.unsubscribeUpdate = null;
+    } else if (typeof ipc !== 'undefined') {
+      ipc.unregisterUpdateStatusListener?.(this.handleUpdateStatusChanged);
+    }
   },
   methods: {
     routeTo,
@@ -269,6 +414,23 @@ export default defineComponent({
       const fallBackGroup = this.activeGroup;
       this.activeGroup =
         this.groups.find((g) => {
+          if (
+            g.name === 'parties' &&
+            (fullPath.startsWith('/parties') ||
+              fullPath.startsWith('/edit/Party') ||
+              fullPath.startsWith('/print/Party'))
+          ) {
+            return true;
+          }
+
+          if (
+            g.name === 'reports' &&
+            (fullPath.startsWith('/report') ||
+              fullPath.startsWith('/report-print'))
+          ) {
+            return true;
+          }
+
           if (fullPath.startsWith(g.route) && g.route !== '/') {
             return true;
           }
@@ -317,6 +479,38 @@ export default defineComponent({
       }
 
       return { path, query: { filters: JSON.stringify(filters) } };
+    },
+    handleUpdateStatusChanged(_event: unknown, state: UpdateState) {
+      if (state) {
+        this.updateState = state;
+      }
+    },
+    async onUpdateClick() {
+      if (typeof ipc === 'undefined' || this.isUpdateDisabled) {
+        return;
+      }
+
+      try {
+        if (this.updateState.status === 'available') {
+          const state = await ipc.downloadUpdate?.();
+          if (state) {
+            this.updateState = state;
+          }
+          return;
+        }
+
+        if (this.updateState.status === 'downloaded') {
+          await ipc.quitAndInstallUpdate?.();
+          return;
+        }
+
+        const state = await ipc.checkForUpdates?.(true);
+        if (state) {
+          this.updateState = state;
+        }
+      } catch (err) {
+        console.error('Error handling update action:', err);
+      }
     },
   },
 });

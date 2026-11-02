@@ -8,7 +8,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { ConfigMap } from 'fyo/core/types';
 import config from 'utils/config';
 import type { DatabaseMethod } from 'utils/db/types';
-import type { BackendResponse } from 'utils/ipc/types';
+import type { BackendResponse, UpdateState } from 'utils/ipc/types';
 import { IPC_ACTIONS, IPC_CHANNELS, IPC_MESSAGES } from 'utils/messages';
 import type {
   ConfigFilesWithModified,
@@ -114,8 +114,29 @@ const ipc = {
     )) as boolean;
   },
 
-  async checkForUpdates() {
-    await ipcRenderer.invoke(IPC_ACTIONS.CHECK_FOR_UPDATES);
+  async checkForUpdates(manual = false) {
+    return (await ipcRenderer.invoke(
+      IPC_ACTIONS.CHECK_FOR_UPDATES,
+      manual
+    )) as UpdateState;
+  },
+
+  async getUpdateStatus() {
+    return (await ipcRenderer.invoke(
+      IPC_ACTIONS.GET_UPDATE_STATUS
+    )) as UpdateState;
+  },
+
+  async downloadUpdate() {
+    return (await ipcRenderer.invoke(
+      IPC_ACTIONS.DOWNLOAD_UPDATE
+    )) as UpdateState;
+  },
+
+  async quitAndInstallUpdate() {
+    return (await ipcRenderer.invoke(
+      IPC_ACTIONS.QUIT_AND_INSTALL_UPDATE
+    )) as void;
   },
 
   openLink(link: string) {
@@ -319,6 +340,24 @@ const ipc = {
 
   registerConsoleLogListener(listener: IPCRendererListener) {
     ipcRenderer.on(IPC_CHANNELS.CONSOLE_LOG, listener);
+  },
+
+  registerUpdateStatusListener(listener: IPCRendererListener) {
+    const handler: IPCRendererListener = (event, ...args) => {
+      listener(event, ...args);
+    };
+    ipcRenderer.on(IPC_CHANNELS.UPDATE_STATUS_CHANGED, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.UPDATE_STATUS_CHANGED, handler);
+    };
+  },
+
+  unregisterUpdateStatusListener(listener?: IPCRendererListener) {
+    if (listener) {
+      ipcRenderer.removeListener(IPC_CHANNELS.UPDATE_STATUS_CHANGED, listener);
+    } else {
+      ipcRenderer.removeAllListeners(IPC_CHANNELS.UPDATE_STATUS_CHANGED);
+    }
   },
 
   db: {

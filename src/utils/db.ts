@@ -61,7 +61,7 @@ export async function handleDatabaseConnectionError(
 
   if (message.includes('EACCES') || message.includes('EPERM')) {
     return await showDbErrorDialog(
-      t`Nivo cannot access database file ${dbPath}. Check its permissions or select an accessible copy.`
+      t`VEYRO cannot access database file ${dbPath}. Check its permissions or select an accessible copy.`
     );
   }
 

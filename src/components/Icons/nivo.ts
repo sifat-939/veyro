@@ -24,6 +24,8 @@ const glyphs = {
   sidebar:
     '<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M9 4v16"/>',
   user: '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>',
+  users:
+    '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   dashboard:
     '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="6" height="4" rx="1.2"/><rect x="14" y="11" width="6" height="9" rx="1.5"/><rect x="4" y="14" width="7" height="6" rx="1.5"/>',
   document:
@@ -113,6 +115,7 @@ export const nivoIconPaths: Record<string, string> = {
   '16:mail': glyphs.envelope,
   '16:normal': glyphs.folder,
   '16:opened': glyphs.folderOpen,
+  '16:parties': glyphs.users,
   '16:phone': glyphs.phone,
   '16:plus': glyphs.plus,
   '16:search': glyphs.search,
@@ -132,6 +135,7 @@ export const nivoIconPaths: Record<string, string> = {
   '18:mail': glyphs.envelope,
   '18:pos': glyphs.terminal,
   '18:opening-ac': glyphs.book,
+  '18:parties': glyphs.users,
   '18:percentage': glyphs.percent,
   '18:property': glyphs.home,
   '18:purchase-invoice': glyphs.receipt,
@@ -149,6 +153,7 @@ export const nivoIconPaths: Record<string, string> = {
   '24:green-check': glyphs.check,
   '24:invoice': glyphs.document,
   '24:mail': glyphs.envelope,
+  '24:parties': glyphs.users,
   '24:privacy': glyphs.shield,
   '24:system': glyphs.cpu,
 };

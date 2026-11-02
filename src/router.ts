@@ -1,18 +1,15 @@
-import ChartOfAccounts from 'src/pages/ChartOfAccounts.vue';
 import CommonForm from 'src/pages/CommonForm/CommonForm.vue';
 import Dashboard from 'src/pages/Dashboard/Dashboard.vue';
 import GetStarted from 'src/pages/GetStarted.vue';
-import ImportWizard from 'src/pages/ImportWizard.vue';
 import ListView from 'src/pages/ListView/ListView.vue';
 import PrintView from 'src/pages/PrintView/PrintView.vue';
 import ReportPrintView from 'src/pages/PrintView/ReportPrintView.vue';
 import QuickEditForm from 'src/pages/QuickEditForm.vue';
 import Report from 'src/pages/Report.vue';
 import Settings from 'src/pages/Settings/Settings.vue';
-import TemplateBuilder from 'src/pages/TemplateBuilder/TemplateBuilder.vue';
-import CustomizeForm from 'src/pages/CustomizeForm/CustomizeForm.vue';
-import POS from 'src/pages/POS/POS.vue';
 import BankCash from 'src/pages/BankCash.vue';
+import PartyHub from 'src/pages/PartyHub/PartyHub.vue';
+import ReportsHub from 'src/pages/ReportsHub/ReportsHub.vue';
 import { parseListRouteFilters } from './utils/filters';
 import type { HistoryState } from 'vue-router';
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
@@ -36,13 +33,23 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: Dashboard,
   },
+  {
+    path: '/dashboard',
+    redirect: '/',
+  },
+  {
+    path: '/parties/:name(.*)?',
+    name: 'PartyHub',
+    component: PartyHub,
+    props: true,
+  },
   { path: '/bank-cash', name: 'Bank & Cash', component: BankCash },
   {
     path: '/get-started',
     component: GetStarted,
   },
   {
-    path: `/edit/:schemaName/:name`,
+    path: `/edit/:schemaName/:name(.*)`,
     name: `CommonForm`,
     components: {
       default: CommonForm,
@@ -84,9 +91,19 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/print/:schemaName/:name',
+    path: '/print/:schemaName/:name(.*)',
     name: 'PrintView',
     component: PrintView,
+    props: true,
+  },
+  {
+    path: '/reports',
+    redirect: '/reports/sales',
+  },
+  {
+    path: '/reports/:reportType(sales|purchase)',
+    name: 'ReportsHub',
+    component: ReportsHub,
     props: true,
   },
   {
@@ -105,7 +122,7 @@ const routes: RouteRecordRaw[] = [
     path: '/chart-of-accounts',
     name: 'Chart Of Accounts',
     components: {
-      default: ChartOfAccounts,
+      default: () => import('src/pages/ChartOfAccounts.vue'),
       edit: QuickEditForm,
     },
     props: {
@@ -116,7 +133,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/import-wizard',
     name: 'Import Wizard',
-    component: ImportWizard,
+    component: () => import('src/pages/ImportWizard.vue'),
   },
   {
     path: '/data-tools',
@@ -125,13 +142,13 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/template-builder/:name',
     name: 'Template Builder',
-    component: TemplateBuilder,
+    component: () => import('src/pages/TemplateBuilder/TemplateBuilder.vue'),
     props: true,
   },
   {
     path: '/customize-form',
     name: 'Customize Form',
-    component: CustomizeForm,
+    component: () => import('src/pages/CustomizeForm/CustomizeForm.vue'),
   },
   {
     path: '/settings',
@@ -149,7 +166,7 @@ const routes: RouteRecordRaw[] = [
     path: '/pos',
     name: 'Point of Sale',
     components: {
-      default: POS,
+      default: () => import('src/pages/POS/POS.vue'),
       edit: QuickEditForm,
     },
     props: {

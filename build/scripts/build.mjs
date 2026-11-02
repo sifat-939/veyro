@@ -28,6 +28,7 @@ const rawArgs = yargs(hideBin(process.argv))
     description: 'Only build the source files, electron-builder will not run',
   });
 
+process.env['NODE_ENV'] = 'production';
 const argv = rawArgs.argv;
 if (argv.nosign) {
   process.env['CSC_IDENTITY_AUTO_DISCOVERY'] = false;

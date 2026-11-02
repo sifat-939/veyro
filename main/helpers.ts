@@ -73,8 +73,27 @@ export function rendererLog(main: Main, ...args: unknown[]) {
   main.mainWindow?.webContents.send(IPC_CHANNELS.CONSOLE_LOG, ...args);
 }
 
-export function isNetworkError(error: Error) {
-  switch (error?.message) {
+export function isNetworkError(error: Error | null | undefined): boolean {
+  if (!error) {
+    return false;
+  }
+
+  const msg = error.message || '';
+  const code = (error as NodeJS.ErrnoException).code;
+
+  if (
+    code === 'ENOTFOUND' ||
+    code === 'ETIMEDOUT' ||
+    code === 'ECONNREFUSED' ||
+    code === 'ECONNRESET' ||
+    code === 'EHOSTUNREACH' ||
+    code === 'EAI_AGAIN' ||
+    code === 'ENETUNREACH'
+  ) {
+    return true;
+  }
+
+  switch (msg) {
     case 'net::ERR_INTERNET_DISCONNECTED':
     case 'net::ERR_NETWORK_CHANGED':
     case 'net::ERR_PROXY_CONNECTION_FAILED':
@@ -85,6 +104,13 @@ export function isNetworkError(error: Error) {
     case 'net::ERR_CONNECTION_TIMED_OUT':
       return true;
     default:
-      return false;
+      return (
+        msg.includes('net::ERR_') ||
+        msg.includes('ENOTFOUND') ||
+        msg.includes('ETIMEDOUT') ||
+        msg.includes('ECONNREFUSED') ||
+        msg.includes('ECONNRESET') ||
+        msg.includes('getaddrinfo')
+      );
   }
 }

@@ -4,7 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Nivo</title>
+    <title>VEYRO</title>
+    <script>
+      (function() {
+        try {
+          var mode = localStorage.getItem('nivo_dark_mode');
+          if (mode !== 'false') {
+            document.documentElement.classList.add('dark', 'custom-scroll', 'custom-scroll-thumb1');
+            document.documentElement.style.backgroundColor = '#111827';
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      html.dark, html.dark body {
+        background-color: #111827 !important;
+        color: #f9fafb;
+      }
+    </style>
   </head>
   <body></body>
   <script type="module" src="./renderer.ts"></script>

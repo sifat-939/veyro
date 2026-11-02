@@ -1,4 +1,5 @@
 import type { Report } from 'reports/Report';
+import { normalizeCurrencyText } from './printFormat';
 
 export type ReportPrintInput = Pick<
   Report,
@@ -68,7 +69,7 @@ export function getReportPrintValues(
         const cell = row.cells[column.index];
         cells[String(column.index)] =
           column.fieldtype === 'Currency'
-            ? (cell?.value || '').replace(/৳\s*/g, 'Tk. ')
+            ? normalizeCurrencyText(String(cell?.value || ''))
             : cell?.value || '';
         styles[String(column.index)] = {
           fontWeight: cell?.bold ? '700' : '400',

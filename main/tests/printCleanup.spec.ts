@@ -14,13 +14,17 @@ class PrintWindow {
   webContents = {
     executeJavaScript: async () => {
       if (failure === 'assets') throw new Error('assets');
+      if (failure === 'assets-hang' || failure === 'print-assets-hang')
+        return new Promise(() => {});
     },
     printToPDF: async () => {
       if (failure === 'pdf') throw new Error('pdf');
+      if (failure === 'pdf-hang') return new Promise(() => {});
       return Buffer.from('PDF');
     },
     print: (_options: unknown, callback: (success: boolean) => void) => {
       if (failure === 'print') throw new Error('print');
+      if (failure === 'print-hang') return;
       callback(false);
     },
   };
@@ -28,7 +32,7 @@ class PrintWindow {
     windows.push(this);
   }
   async loadFile(_file: string) {
-    if (failure === 'load') throw new Error('load');
+    if (failure === 'load' || failure === 'print-load') throw new Error('load');
   }
   isDestroyed() {
     return this.destroyed;
@@ -51,18 +55,46 @@ test('native print jobs clean temporary HTML and windows on success and failure'
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'nivo-print-test-'));
   const app = { getPath: () => temp } as unknown as App;
   try {
-    for (const stage of ['load', 'assets', 'pdf', 'write', 'print']) {
+    for (const stage of [
+      'load',
+      'assets',
+      'pdf',
+      'write',
+      'print',
+      'assets-hang',
+      'pdf-hang',
+      'print-hang',
+      'print-load',
+      'print-assets-hang',
+    ]) {
       failure = stage;
+      const isHang = stage.endsWith('-hang');
+      const timeoutMs = isHang ? 50 : undefined;
       const destination =
         stage === 'write'
           ? path.join(temp, 'missing', 'out.pdf')
           : path.join(temp, 'out.pdf');
       try {
-        if (stage === 'print')
-          await printHtmlDocument('<p>Test</p>', app, 21, 29.7);
-        else await saveHtmlAsPdf('<p>Test</p>', destination, app, 21, 29.7);
+        if (stage.startsWith('print'))
+          await printHtmlDocument('<p>Test</p>', app, 21, 29.7, timeoutMs);
+        else
+          await saveHtmlAsPdf(
+            '<p>Test</p>',
+            destination,
+            app,
+            21,
+            29.7,
+            timeoutMs
+          );
         t.fail(`${stage} should reject`);
-      } catch {
+      } catch (err) {
+        if (isHang) {
+          t.match(
+            String(err),
+            /timed out/i,
+            `${stage} error indicates timeout`
+          );
+        }
         t.ok(
           windows.every((window) => window.destroyed),
           `${stage} closes hidden windows`

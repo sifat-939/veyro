@@ -94,3 +94,78 @@ test('quantity display keeps each unit separate', (t) => {
   );
   t.end();
 });
+
+test('getInvoiceFinancialAmounts delegates to invoice.getFinancialAmounts if present', (t) => {
+  let called = false;
+  const mockInvoice = {
+    getFinancialAmounts: () => {
+      called = true;
+      return {
+        finalAmount: fyo.pesa(500),
+        paidAmount: fyo.pesa(200),
+        dueAmount: fyo.pesa(300),
+      };
+    },
+  };
+  const amounts = getInvoiceFinancialAmounts(mockInvoice, fyo);
+  t.ok(called, 'delegated to invoice.getFinancialAmounts()');
+  t.equal(amounts.finalAmount.float, 500);
+  t.equal(amounts.paidAmount.float, 200);
+  t.equal(amounts.dueAmount.float, 300);
+  t.end();
+});
+
+test('getInvoiceFinancialAmounts handles null, undefined, and raw database record shapes safely', (t) => {
+  const fromNull = getInvoiceFinancialAmounts(null, fyo);
+  t.equal(fromNull.finalAmount.float, 0, 'null invoice has zero finalAmount');
+  t.equal(fromNull.paidAmount.float, 0, 'null invoice has zero paidAmount');
+  t.equal(fromNull.dueAmount.float, 0, 'null invoice has zero dueAmount');
+
+  const fromUndefined = getInvoiceFinancialAmounts(undefined, fyo);
+  t.equal(
+    fromUndefined.finalAmount.float,
+    0,
+    'undefined invoice has zero finalAmount'
+  );
+  t.equal(
+    fromUndefined.paidAmount.float,
+    0,
+    'undefined invoice has zero paidAmount'
+  );
+  t.equal(
+    fromUndefined.dueAmount.float,
+    0,
+    'undefined invoice has zero dueAmount'
+  );
+
+  const rawSubmitted = getInvoiceFinancialAmounts(
+    {
+      baseGrandTotal: fyo.pesa(300),
+      outstandingAmount: fyo.pesa(100),
+      submitted: 1,
+    } as any,
+    fyo
+  );
+  t.equal(rawSubmitted.finalAmount.float, 300, 'raw submitted finalAmount');
+  t.equal(rawSubmitted.paidAmount.float, 200, 'raw submitted paidAmount');
+  t.equal(rawSubmitted.dueAmount.float, 100, 'raw submitted dueAmount');
+
+  const rawCancelled = getInvoiceFinancialAmounts(
+    {
+      baseGrandTotal: fyo.pesa(300),
+      outstandingAmount: fyo.pesa(100),
+      submitted: 1,
+      cancelled: 1,
+    } as any,
+    fyo
+  );
+  t.equal(
+    rawCancelled.finalAmount.float,
+    300,
+    'raw cancelled finalAmount retains grand total'
+  );
+  t.equal(rawCancelled.paidAmount.float, 0, 'raw cancelled paidAmount is zero');
+  t.equal(rawCancelled.dueAmount.float, 0, 'raw cancelled dueAmount is zero');
+
+  t.end();
+});

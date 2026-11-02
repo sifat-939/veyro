@@ -1,18 +1,19 @@
 <div align="center">
 
   <br />
-  <img src="src/assets/brand/nivo-logo.png" alt="Nivo" width="110" height="110" />
+  <img src="src/assets/brand/veyro-logo-tagline.png" alt="VEYRO — Business, in Balance." width="360" />
   <br /><br />
 
-  # Nivo
+  # VEYRO
 
-  <p><strong>The modern, offline-first desktop accounting suite crafted for velocity, elegance, and sovereign data privacy.</strong></p>
+  <p><strong>Business, in Balance.</strong></p>
+  <p><em>The sovereign, offline-first desktop business and accounting suite crafted for velocity, elegance, and data privacy.</em></p>
   <p><em>Built on Electron & Vue 3 • Powered by Embedded SQLite • Zero Cloud Dependencies</em></p>
 
   <br />
 
   <p>
-    <a href="https://github.com/sifat-939/nivo/releases/latest"><img src="https://img.shields.io/github/v/release/sifat-939/nivo?style=for-the-badge&color=0f172a&labelColor=1e293b&logo=github&label=RELEASE" alt="Release" /></a>
+    <a href="https://github.com/sifat-939/veyro/releases/latest"><img src="https://img.shields.io/github/v/release/sifat-939/veyro?style=for-the-badge&color=0f172a&labelColor=1e293b&logo=github&label=RELEASE" alt="Release" /></a>
     &nbsp;
     <img src="https://img.shields.io/badge/PLATFORM-WINDOWS%20%7C%20LINUX-0f172a?style=for-the-badge&labelColor=1e293b&logo=windows" alt="Platform" />
     &nbsp;
@@ -22,8 +23,8 @@
   </p>
 
   <p>
-    <a href="#-downloads"><strong>Get Nivo</strong></a> &nbsp;•&nbsp;
-    <a href="#-the-nivo-philosophy"><strong>Philosophy</strong></a> &nbsp;•&nbsp;
+    <a href="#-downloads"><strong>Get VEYRO</strong></a> &nbsp;•&nbsp;
+    <a href="#-the-veyro-philosophy"><strong>Philosophy</strong></a> &nbsp;•&nbsp;
     <a href="#-core-modules"><strong>Features</strong></a> &nbsp;•&nbsp;
     <a href="#-bengali-user-guide"><strong>Documentation</strong></a> &nbsp;•&nbsp;
     <a href="#-engineering--architecture"><strong>Architecture</strong></a> &nbsp;•&nbsp;
@@ -36,7 +37,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/nivo-dashboard-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/nivo-dashboard.png">
-    <img alt="Nivo Interactive Dashboard Preview" src="docs/assets/nivo-dashboard.png" width="94%" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 45px -15px rgba(0,0,0,0.5);">
+    <img alt="VEYRO Interactive Dashboard Preview" src="docs/assets/nivo-dashboard.png" width="94%" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 45px -15px rgba(0,0,0,0.5);">
   </picture>
 
   <p><sub><em>Interactive Financial Dashboard featuring real-time cash flow monitoring, invoice tracking, and expense analytics.</em></sub></p>
@@ -45,25 +46,33 @@
 
 ---
 
-## ⚡ The Nivo Philosophy
+## ⚡ The VEYRO Philosophy
 
 Most business accounting software today is slow, bloated with unused features, and locked behind recurring monthly subscriptions and invasive telemetry.
 
-**Nivo takes an uncompromising stance:**
+**VEYRO stands for modern business balance:**
 
 <table width="100%">
   <tr>
-    <td width="33.3%" valign="top">
-      <h3>🔒 Sovereign Data</h3>
-      <p>Your financial ledger belongs to you alone. All invoices, vouchers, and transactions live strictly on your machine in an isolated, portable SQLite file (<code>.db</code>). No cloud servers, no third-party telemetry, no vendor lock-in.</p>
+    <td width="20%" align="center">
+      <h3>💎 V</h3>
+      <p><strong>Value</strong><br />Tangible, uninterrupted return for your time and commerce.</p>
     </td>
-    <td width="33.3%" valign="top">
-      <h3>⚡ Instant Velocity</h3>
-      <p>Experience zero-latency desktop responsiveness. With instant page switches, minimal RAM overhead, and seamless keyboard navigation, Nivo is crafted for rapid everyday bookkeeping.</p>
+    <td width="20%" align="center">
+      <h3>⚡ E</h3>
+      <p><strong>Efficiency</strong><br />Zero-lag local processing and instant keyboard velocity.</p>
     </td>
-    <td width="33.3%" valign="top">
-      <h3>🛡️ Autonomous Continuity</h3>
-      <p>Zero mandatory accounts, zero internet requirements, and no subscriptions. Automatically maintains timestamped daily backups on your device so your business never misses a beat.</p>
+    <td width="20%" align="center">
+      <h3>🏢 Y</h3>
+      <p><strong>Your Business</strong><br />100% private, sovereign data. Never shared with cloud servers.</p>
+    </td>
+    <td width="20%" align="center">
+      <h3>📑 R</h3>
+      <p><strong>Records</strong><br />Strict, audit-grade double-entry accounting integrity.</p>
+    </td>
+    <td width="20%" align="center">
+      <h3>🔄 O</h3>
+      <p><strong>Operations</strong><br />Effortless inventory, party ledger, and payroll workflows.</p>
     </td>
   </tr>
 </table>
@@ -72,22 +81,22 @@ Most business accounting software today is slow, bloated with unused features, a
 
 ## 📥 Downloads
 
-Ready-to-run release packages for 64-bit systems are available on the [**GitHub Releases Portal**](https://github.com/sifat-939/nivo/releases/latest).
+Ready-to-run release packages for 64-bit systems are available on the [**GitHub Releases Portal**](https://github.com/sifat-939/veyro/releases/latest).
 
 | Platform / Edition | Target OS | Description | Download |
 |:---|:---:|:---|:---:|
-| **Windows Setup** | Windows 10 / 11 (64-bit) | Standard installer with Desktop icon and Start Menu shortcuts | [**`Nivo-Setup.exe`**](https://github.com/sifat-939/nivo/releases/download/v0.40.5/Nivo-v0.40.5-windows-x64-setup.exe) |
-| **Windows Portable** | Windows 10 / 11 (64-bit) | Zero-install portable executable; ideal for USB sticks or isolated workflows | [**`Nivo-Portable.exe`**](https://github.com/sifat-939/nivo/releases/download/v0.40.5/Nivo-v0.40.5-windows-x64-portable.exe) |
-| **Linux AppImage** | Modern 64-bit Linux | Self-contained executable for Ubuntu, Debian, Fedora, Arch, and more | [**`Nivo.AppImage`**](https://github.com/sifat-939/nivo/releases/download/v0.40.5/Nivo-v0.40.5-linux-x86_64.AppImage) |
-| **Integrity Check** | All Platforms | Cryptographic SHA-256 hashes to verify download authenticity | [**`SHA256SUMS.txt`**](https://github.com/sifat-939/nivo/releases/download/v0.40.5/SHA256SUMS.txt) |
+| **Windows Setup** | Windows 10 / 11 (64-bit) | Standard installer with Desktop icon and Start Menu shortcuts | [**`VEYRO-Setup.exe`**](https://github.com/sifat-939/veyro/releases/download/v0.40.5/VEYRO-v0.40.5-windows-x64-setup.exe) |
+| **Windows Portable** | Windows 10 / 11 (64-bit) | Zero-install portable executable; ideal for USB sticks or isolated workflows | [**`VEYRO-Portable.exe`**](https://github.com/sifat-939/veyro/releases/download/v0.40.5/VEYRO-v0.40.5-windows-x64-portable.exe) |
+| **Linux AppImage** | Modern 64-bit Linux | Self-contained executable for Ubuntu, Debian, Fedora, Arch, and more | [**`VEYRO.AppImage`**](https://github.com/sifat-939/veyro/releases/download/v0.40.5/VEYRO-v0.40.5-linux-x86_64.AppImage) |
+| **Integrity Check** | All Platforms | Cryptographic SHA-256 hashes to verify download authenticity | [**`SHA256SUMS.txt`**](https://github.com/sifat-939/veyro/releases/download/v0.40.5/SHA256SUMS.txt) |
 
 > 💡 **Windows SmartScreen Tip:**  
-> Because Nivo is an open-source, community-distributed build without an enterprise code-signing certificate, Windows SmartScreen may show an *"Unknown Publisher"* warning. Click **"More info"** and then **"Run anyway"** on initial launch.
+> Because VEYRO is an open-source, community-distributed build without an enterprise code-signing certificate, Windows SmartScreen may show an *"Unknown Publisher"* warning. Click **"More info"** and then **"Run anyway"** on initial launch.
 
 ### Linux Quick Start
 ```bash
-chmod +x Nivo-v0.40.5-linux-x86_64.AppImage
-APPIMAGE_EXTRACT_AND_RUN=1 ./Nivo-v0.40.5-linux-x86_64.AppImage
+chmod +x VEYRO-v0.40.5-linux-x86_64.AppImage
+APPIMAGE_EXTRACT_AND_RUN=1 ./VEYRO-v0.40.5-linux-x86_64.AppImage
 ```
 
 ---
@@ -100,7 +109,7 @@ For business owners, accountants, and operators in Bangladesh, we maintain an ex
   <table width="100%">
     <tr>
       <td align="center" style="padding: 20px;">
-        <h3>📘 Nivo Bangla Practical User Guide (PDF)</h3>
+        <h3>📘 VEYRO Bangla Practical User Guide (PDF)</h3>
         <p><strong>58 comprehensive pages • 52 real-world operational workflows • Complete synthetic screenshot walkthroughs</strong></p>
         <p>Covers opening balances, sales/purchase voucher creation, payment allocations, salary processing, inventory reconciliation, daily accounting checklists, and automated backup management.</p>
         <br />
@@ -157,11 +166,11 @@ For business owners, accountants, and operators in Bangladesh, we maintain an ex
 
 ## 🛠️ Engineering & Architecture
 
-Nivo is engineered using a robust, clean desktop stack:
+VEYRO is engineered using a robust, clean desktop stack:
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│                      Nivo Desktop                      │
+│                     VEYRO Desktop                      │
 │             (Electron Multi-Process Bridge)            │
 ├──────────────────────────┬─────────────────────────────┤
 │      Frontend Layer      │        Backend Layer        │
@@ -192,8 +201,8 @@ Nivo is engineered using a robust, clean desktop stack:
 
 ```bash
 # Clone the repository
-git clone https://github.com/sifat-939/nivo.git
-cd nivo
+git clone https://github.com/sifat-939/veyro.git
+cd veyro
 
 # Enable Yarn and install frozen dependencies
 corepack enable
@@ -202,7 +211,7 @@ node node_modules/electron/install.js
 node node_modules/esbuild/install.js
 yarn postinstall
 
-# Start Nivo in local development mode
+# Start VEYRO in local development mode
 yarn dev
 ```
 
@@ -226,8 +235,8 @@ python3 scripts/check-repository.py
 
 ## 🔐 Data Privacy Architecture
 
-Nivo strictly separates application binaries from user company data:
-- **Linux Storage:** `~/.local/share/nivo/data/`
+VEYRO strictly separates application binaries from user company data:
+- **Linux Storage:** `~/.local/share/nivo/data/` (preserved for seamless continuity)
 - **Windows Storage:** `%APPDATA%\nivo\data\`
 
 All databases, logs, secrets, and private credentials are excluded from version control via `.gitignore`. Rebuilding the application or pushing changes never touches, transmits, or exposes your proprietary accounting records. See [Installation & Storage Specs](docs/installation.md) for details.
@@ -236,7 +245,7 @@ All databases, logs, secrets, and private credentials are excluded from version 
 
 ## 📜 License & Attribution
 
-Nivo is open-source software licensed under the **GNU Affero General Public License v3.0** ([AGPL-3.0-only](LICENSE)).
+VEYRO is open-source software licensed under the **GNU Affero General Public License v3.0** ([AGPL-3.0-only](LICENSE)).
 
 - **Upstream Project:** Derived from [Frappe Books](https://github.com/frappe/books) created by [Frappe Technologies Pvt. Ltd.](https://frappe.io).
 - All upstream copyrights, trademarks, and the original [Upstream README](docs/upstream-readme.md) are fully acknowledged and preserved.

@@ -1,30 +1,29 @@
 import { Fyo } from 'fyo';
 import { Money } from 'pesa';
+import {
+  calculateInvoiceFinancialAmounts,
+  type InvoiceFinancialAmounts,
+} from 'models/baseModels/Invoice/Invoice';
 
 export interface InvoiceFinancialSource {
   baseGrandTotal?: Money;
   outstandingAmount?: Money;
   isSubmitted?: boolean;
   isCancelled?: boolean;
+  submitted?: number | boolean;
+  cancelled?: number | boolean;
+  getFinancialAmounts?: () => InvoiceFinancialAmounts;
 }
 
-export function getInvoiceFinancialAmounts(
-  invoice: InvoiceFinancialSource,
-  fyo: Fyo
-): { finalAmount: Money; paidAmount: Money; dueAmount: Money } {
-  const finalAmount = (invoice.baseGrandTotal ?? fyo.pesa(0)).abs();
-  if (invoice.isCancelled) {
-    return {
-      finalAmount,
-      paidAmount: fyo.pesa(0),
-      dueAmount: fyo.pesa(0),
-    };
-  }
+export { calculateInvoiceFinancialAmounts };
+export type { InvoiceFinancialAmounts };
 
-  const dueAmount = invoice.isSubmitted
-    ? (invoice.outstandingAmount ?? fyo.pesa(0)).abs()
-    : finalAmount;
-  const difference = finalAmount.sub(dueAmount);
-  const paidAmount = difference.isNegative() ? fyo.pesa(0) : difference;
-  return { finalAmount, paidAmount, dueAmount };
+export function getInvoiceFinancialAmounts(
+  invoice: InvoiceFinancialSource | null | undefined,
+  fyo: Fyo
+): InvoiceFinancialAmounts {
+  if (typeof invoice?.getFinancialAmounts === 'function') {
+    return invoice.getFinancialAmounts();
+  }
+  return calculateInvoiceFinancialAmounts(invoice!, fyo);
 }

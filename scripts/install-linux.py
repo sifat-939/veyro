@@ -67,25 +67,48 @@ def install(source):
     for size in [16, 32, 48, 64, 128, 256, 512]:
         icons = data_home / f'icons/hicolor/{size}x{size}/apps'
         icons.mkdir(parents=True, exist_ok=True)
-        for name in ['nivo', 'frappe-books']:
+        for name in ['veyro', 'nivo', 'frappe-books']:
             shutil.copy2(repo / f'build/icons/{size}x{size}.png', icons / f'{name}.png')
-    launcher = home / '.local/bin/nivo'
+    launcher = home / '.local/bin/veyro'
     launcher.parent.mkdir(parents=True, exist_ok=True)
     launcher.write_text('#!/bin/sh\nexport APPIMAGE_EXTRACT_AND_RUN=1\n'
                         'export CHROME_DESKTOP=frappe-books.desktop\n'
                         f'exec {shlex.quote(str(app))} "$@"\n')
     launcher.chmod(0o755)
+
+    # Legacy launcher compatibility
+    launcher_nivo = home / '.local/bin/nivo'
+    launcher_nivo.write_text('#!/bin/sh\n'
+                             f'exec {shlex.quote(str(launcher))} "$@"\n')
+    launcher_nivo.chmod(0o755)
+
     applications.mkdir(parents=True, exist_ok=True)
     # Keep Electron's desktop identity so taskbar and window icons match.
     desktop = applications / 'frappe-books.desktop'
-    desktop.write_text('[Desktop Entry]\nName=Nivo\n'
-                       'Comment=Offline accounting and business management\n'
+    desktop_content = ('[Desktop Entry]\nName=VEYRO\n'
+                       'Comment=Business, in Balance.\n'
                        f'Exec="{launcher}" %U\n'
-                       f'Icon={data_home}/icons/hicolor/256x256/apps/nivo.png\n'
+                       f'Icon={data_home}/icons/hicolor/256x256/apps/veyro.png\n'
                        'Terminal=false\nType=Application\nCategories=Office;Finance;\n'
                        'StartupWMClass=frappe-books\n')
+    desktop.write_text(desktop_content)
     desktop.chmod(0o755)
+
+    desktop_veyro = applications / 'veyro.desktop'
+    desktop_veyro.write_text(desktop_content)
+    desktop_veyro.chmod(0o755)
+
     (applications / 'nivo.desktop').unlink(missing_ok=True)
+
+    # User desktop shortcuts
+    desktop_dir = home / 'Desktop'
+    if desktop_dir.is_dir():
+        user_desktop = desktop_dir / 'VEYRO.desktop'
+        user_desktop.write_text(desktop_content)
+        user_desktop.chmod(0o755)
+        # Keep Nivo.desktop updated as well
+        (desktop_dir / 'Nivo.desktop').write_text(desktop_content)
+        (desktop_dir / 'Nivo.desktop').chmod(0o755)
     if shutil.which('desktop-file-validate'):
         subprocess.run(['desktop-file-validate', str(desktop)], check=True)
     for cmd in [['update-desktop-database', str(applications)], ['kbuildsycoca6', '--noincremental']]:

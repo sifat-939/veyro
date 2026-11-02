@@ -209,13 +209,14 @@ export abstract class AccountReport extends LedgerReport {
 
     const accountList: Account[] = (
       await this.fyo.db.getAllRaw('Account', {
-        fields: ['name', 'rootType', 'isGroup', 'parentAccount'],
+        fields: ['name', 'rootType', 'isGroup', 'parentAccount', 'accountType'],
       })
     ).map((rv) => ({
       name: rv.name as string,
       rootType: rv.rootType as AccountRootType,
       isGroup: Boolean(rv.isGroup),
       parentAccount: rv.parentAccount as string | null,
+      accountType: rv.accountType as string | undefined,
     }));
 
     this.accountMap = getMapFromList(accountList, 'name');

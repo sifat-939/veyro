@@ -22,43 +22,55 @@ import registerAutoUpdaterListeners from './main/registerAutoUpdaterListeners';
 import registerIpcMainActionListeners from './main/registerIpcMainActionListeners';
 import registerIpcMainMessageListeners from './main/registerIpcMainMessageListeners';
 import registerProcessListeners from './main/registerProcessListeners';
+import { UpdateState } from './utils/ipc/types';
 
 export class Main {
-  title = 'Nivo';
-  // Enable only after this custom distribution has its own update feed.
-  updatesEnabled = false;
+  title = 'VEYRO';
+  // Enabled with custom distribution feed on sifat-939/nivo GitHub releases
+  updatesEnabled = true;
   icon: string;
 
   winURL = '';
   checkedForUpdate = false;
   mainWindow: BrowserWindow | null = null;
+  get window(): BrowserWindow | null {
+    return this.mainWindow;
+  }
+  updateState: UpdateState = {
+    status: 'idle',
+    currentVersion: app?.getVersion ? app.getVersion() : '0.40.5',
+  };
 
   WIDTH = 1200;
   HEIGHT = process.platform === 'win32' ? 826 : 800;
 
   constructor() {
-    this.icon = app.isPackaged
+    this.icon = app?.isPackaged
       ? path.join(process.resourcesPath, 'icons', '512x512.png')
       : path.resolve('./build/icon.png');
 
-    protocol.registerSchemesAsPrivileged([
+    protocol?.registerSchemesAsPrivileged?.([
       { scheme: 'app', privileges: { secure: true, standard: true } },
     ]);
 
-    if (this.isDevelopment) {
+    if (this.isDevelopment && app) {
       autoUpdater.logger = console;
     }
 
     // https://github.com/electron-userland/electron-builder/issues/4987
-    app.commandLine.appendSwitch('disable-http2');
-    autoUpdater.requestHeaders = {
-      'Cache-Control':
-        'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-    };
+    app?.commandLine?.appendSwitch?.('disable-http2');
+    if (app) {
+      autoUpdater.requestHeaders = {
+        'Cache-Control':
+          'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      };
+    }
 
-    this.registerListeners();
+    if (typeof app?.on === 'function') {
+      this.registerListeners();
+    }
     if (this.isMac && this.isDevelopment) {
-      app.dock.setIcon(this.icon);
+      app?.dock?.setIcon?.(this.icon);
     }
   }
 
@@ -94,6 +106,7 @@ export class Main {
       title: this.title,
       titleBarStyle: 'hidden',
       trafficLightPosition: { x: 16, y: 16 },
+      backgroundColor: '#111827',
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false,

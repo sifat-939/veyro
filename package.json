@@ -1,7 +1,7 @@
 {
   "name": "frappe-books",
   "version": "0.40.5",
-  "description": "Nivo — simple offline accounting for your business",
+  "description": "VEYRO — Business, in Balance.",
   "author": {
     "name": "Frappe Technologies Pvt. Ltd.",
     "email": "hello@frappe.io"
@@ -16,6 +16,7 @@
     "script:profile": "scripts/profile.sh",
     "test": "scripts/test.sh",
     "test:nivo": "bash scripts/test-nivo.sh",
+    "tape": "ELECTRON_RUN_AS_NODE=true TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=true IS_TEST=true TEST_DB_PATH=:memory: ./node_modules/.bin/electron --require ts-node/register --require tsconfig-paths/register ./node_modules/.bin/tape",
     "typecheck": "vue-tsc --noEmit",
     "uitest": "node uitest/index.mjs | tap-spec",
     "lint": "eslint . --ext ts,vue",
@@ -30,7 +31,6 @@
     "better-sqlite3": "^9.2.2",
     "bree": "^9.2.4",
     "codemirror": "^6.0.1",
-    "core-js": "^3.19.0",
     "electron-store": "^8.0.1",
     "feather-icons": "^4.28.0",
     "knex": "^2.4.0",
@@ -95,9 +95,9 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "homepage": "https://frappe.io/books",
+  "homepage": "https://github.com/sifat-939/veyro",
   "repository": {
-    "url": "https://github.com/frappe/books"
+    "url": "https://github.com/sifat-939/veyro"
   },
   "license": "AGPL-3.0-only",
   "packageManager": "yarn@1.22.22",
