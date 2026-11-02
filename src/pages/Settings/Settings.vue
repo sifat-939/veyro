@@ -134,67 +134,189 @@
             </select>
           </div>
 
-          <!-- Logo Upload & Preview -->
-          <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {{ t`Company Logo` }}
-            </label>
-            <div class="flex items-center gap-4">
-              <div
-                v-if="form.logo"
-                class="w-14 h-14 rounded-lg border border-gray-200 dark:border-gray-700 bg-white p-1 flex items-center justify-center overflow-hidden"
-              >
-                <img :src="form.logo" alt="Logo" class="max-w-full max-h-full object-contain" />
-              </div>
-              <div
-                v-else
-                class="w-14 h-14 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400"
-              >
-                <feather-icon name="image" class="w-6 h-6" />
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <button
-                  type="button"
-                  class="px-3 py-1 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition flex items-center gap-1 shadow-xs"
-                  @click="handleSelectLogo"
-                >
-                  <feather-icon name="upload" class="w-3 h-3 text-gray-500" />
-                  <span>{{ form.logo ? t`Change Logo` : t`Upload Logo` }}</span>
-                </button>
-                <button
-                  v-if="form.logo"
-                  type="button"
-                  class="text-xs text-red-500 hover:text-red-700 text-left transition"
-                  @click="form.logo = ''"
-                >
-                  {{ t`Remove Logo` }}
-                </button>
-              </div>
+          <!-- Fiscal Year Start & End -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                {{ t`Fiscal Year Start` }}
+              </label>
+              <input
+                v-model="form.fiscalYearStart"
+                type="date"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                {{ t`Fiscal Year End` }}
+              </label>
+              <input
+                v-model="form.fiscalYearEnd"
+                type="date"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
             </div>
           </div>
 
-          <!-- Fiscal Year Start & End -->
-          <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {{ t`Fiscal Year Start` }}
-            </label>
-            <input
-              v-model="form.fiscalYearStart"
-              type="date"
-              class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
-          </div>
+          <!-- Multi-Asset Upload Section: 3 image upload cards side-by-side -->
+          <div class="md:col-span-2 pt-5 border-t border-gray-100 dark:border-gray-800">
+            <div class="mb-3">
+              <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                {{ t`Print & Branding Assets` }}
+              </label>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {{ t`Upload company assets for customized PDF invoices, receipts, statements, and reports.` }}
+              </p>
+            </div>
 
-          <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {{ t`Fiscal Year End` }}
-            </label>
-            <input
-              v-model="form.fiscalYearEnd"
-              type="date"
-              class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- a) Company Logo -->
+              <div class="rounded-xl border border-gray-200 dark:border-gray-750 bg-gray-50/60 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                      {{ t`Company Logo` }}
+                    </span>
+                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                      {{ t`প্রতিষ্ঠানের লোগো` }}
+                    </span>
+                  </div>
+                  <div class="h-28 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 p-2 flex items-center justify-center overflow-hidden mb-2.5 shadow-2xs">
+                    <img
+                      v-if="form.logo"
+                      :src="form.logo"
+                      alt="Company Logo"
+                      class="max-h-full max-w-full object-contain"
+                    />
+                    <div v-else class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-1">
+                      <feather-icon name="image" class="w-6 h-6 stroke-1" />
+                      <span class="text-[11px]">{{ t`No logo uploaded` }}</span>
+                    </div>
+                  </div>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight mb-3">
+                    {{ t`Appears on top headers, invoices, bills, and report banners.` }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 pt-2 border-t border-gray-200/60 dark:border-gray-750">
+                  <button
+                    type="button"
+                    class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-650 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition flex items-center justify-center gap-1 shadow-2xs"
+                    @click="handleSelectAsset('logo')"
+                  >
+                    <feather-icon name="upload" class="w-3 h-3 text-gray-500" />
+                    <span>{{ form.logo ? t`Change Logo` : t`Upload Logo` }}</span>
+                  </button>
+                  <button
+                    v-if="form.logo"
+                    type="button"
+                    class="px-2.5 py-1.5 text-xs font-medium rounded-md border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100/50 transition flex items-center justify-center gap-1"
+                    :title="t`Remove Logo`"
+                    @click="removeAsset('logo')"
+                  >
+                    <feather-icon name="trash-2" class="w-3 h-3" />
+                    <span>{{ t`Remove` }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- b) Authorized Signature -->
+              <div class="rounded-xl border border-gray-200 dark:border-gray-750 bg-gray-50/60 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                      {{ t`Authorized Signature` }}
+                    </span>
+                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                      {{ t`অনুমোদিত স্বাক্ষর` }}
+                    </span>
+                  </div>
+                  <div class="h-28 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 p-2 flex items-center justify-center overflow-hidden mb-2.5 shadow-2xs">
+                    <img
+                      v-if="form.authorizedSignature"
+                      :src="form.authorizedSignature"
+                      alt="Authorized Signature"
+                      class="max-h-full max-w-full object-contain"
+                    />
+                    <div v-else class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-1">
+                      <feather-icon name="edit-3" class="w-6 h-6 stroke-1" />
+                      <span class="text-[11px]">{{ t`No signature uploaded` }}</span>
+                    </div>
+                  </div>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight mb-3">
+                    {{ t`Appears on bottom signature block of invoices, statements, and reports.` }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 pt-2 border-t border-gray-200/60 dark:border-gray-750">
+                  <button
+                    type="button"
+                    class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-650 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition flex items-center justify-center gap-1 shadow-2xs"
+                    @click="handleSelectAsset('authorizedSignature')"
+                  >
+                    <feather-icon name="upload" class="w-3 h-3 text-gray-500" />
+                    <span>{{ form.authorizedSignature ? t`Change Signature` : t`Upload Signature` }}</span>
+                  </button>
+                  <button
+                    v-if="form.authorizedSignature"
+                    type="button"
+                    class="px-2.5 py-1.5 text-xs font-medium rounded-md border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100/50 transition flex items-center justify-center gap-1"
+                    :title="t`Remove Signature`"
+                    @click="removeAsset('authorizedSignature')"
+                  >
+                    <feather-icon name="trash-2" class="w-3 h-3" />
+                    <span>{{ t`Remove` }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- c) Payment QR / Barcode -->
+              <div class="rounded-xl border border-gray-200 dark:border-gray-750 bg-gray-50/60 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                      {{ t`Payment QR / Barcode` }}
+                    </span>
+                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                      {{ t`পেমেন্ট কিউআর বা বারকোড` }}
+                    </span>
+                  </div>
+                  <div class="h-28 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 p-2 flex items-center justify-center overflow-hidden mb-2.5 shadow-2xs">
+                    <img
+                      v-if="form.paymentQR"
+                      :src="form.paymentQR"
+                      alt="Payment QR"
+                      class="max-h-full max-w-full object-contain"
+                    />
+                    <div v-else class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-1">
+                      <feather-icon name="maximize" class="w-6 h-6 stroke-1" />
+                      <span class="text-[11px]">{{ t`No QR code uploaded` }}</span>
+                    </div>
+                  </div>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight mb-3">
+                    {{ t`Appears on invoices and statements for instant mobile payment scanning.` }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 pt-2 border-t border-gray-200/60 dark:border-gray-750">
+                  <button
+                    type="button"
+                    class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-650 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition flex items-center justify-center gap-1 shadow-2xs"
+                    @click="handleSelectAsset('paymentQR')"
+                  >
+                    <feather-icon name="upload" class="w-3 h-3 text-gray-500" />
+                    <span>{{ form.paymentQR ? t`Change QR Code` : t`Upload QR Code` }}</span>
+                  </button>
+                  <button
+                    v-if="form.paymentQR"
+                    type="button"
+                    class="px-2.5 py-1.5 text-xs font-medium rounded-md border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100/50 transition flex items-center justify-center gap-1"
+                    :title="t`Remove QR Code`"
+                    @click="removeAsset('paymentQR')"
+                  >
+                    <feather-icon name="trash-2" class="w-3 h-3" />
+                    <span>{{ t`Remove` }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -307,6 +429,8 @@ export default defineComponent({
         fiscalYearStart: '',
         fiscalYearEnd: '',
         logo: '',
+        authorizedSignature: '',
+        paymentQR: '',
         darkMode: true,
       },
     };
@@ -343,6 +467,8 @@ export default defineComponent({
         fiscalYearStart: (acc?.fiscalYearStart as string) || '',
         fiscalYearEnd: (acc?.fiscalYearEnd as string) || '',
         logo: ((print?.logo as unknown as string) || ''),
+        authorizedSignature: ((print?.authorizedSignature as unknown as string) || ''),
+        paymentQR: ((print?.paymentQR as unknown as string) || ''),
         darkMode: savedDarkMode,
       };
     },
@@ -355,20 +481,23 @@ export default defineComponent({
         const sys = fyo.singles[ModelNameEnum.SystemSettings];
 
         if (acc) {
-          if (this.form.companyName) await acc.set('companyName', this.form.companyName);
-          if (this.form.fullname) await acc.set('fullname', this.form.fullname);
-          if (this.form.email) await acc.set('email', this.form.email);
+          if (this.form.companyName !== undefined) await acc.set('companyName', this.form.companyName);
+          if (this.form.fullname !== undefined) await acc.set('fullname', this.form.fullname);
+          if (this.form.email !== undefined) await acc.set('email', this.form.email);
           if (this.form.fiscalYearStart) await acc.set('fiscalYearStart', this.form.fiscalYearStart);
           if (this.form.fiscalYearEnd) await acc.set('fiscalYearEnd', this.form.fiscalYearEnd);
           await acc.sync();
         }
 
         if (print) {
-          if (this.form.companyName) await print.set('companyName', this.form.companyName);
+          await print.set('companyName', this.form.companyName || '');
           await print.set('phone', this.form.phone || '');
           await print.set('email', this.form.email || '');
           await print.set('address', this.form.address || '');
           await print.set('logo', this.form.logo || '');
+          await print.set('displayLogo', !!this.form.logo);
+          await print.set('authorizedSignature', this.form.authorizedSignature || '');
+          await print.set('paymentQR', this.form.paymentQR || '');
           await print.sync();
         }
 
@@ -416,7 +545,7 @@ export default defineComponent({
       });
     },
 
-    async handleSelectLogo() {
+    async handleSelectAsset(key: 'logo' | 'authorizedSignature' | 'paymentQR') {
       const mime_types: Record<string, string> = {
         png: 'image/png',
         jpg: 'image/jpeg',
@@ -425,20 +554,38 @@ export default defineComponent({
         webp: 'image/webp',
       };
 
+      const titles: Record<'logo' | 'authorizedSignature' | 'paymentQR', string> = {
+        logo: this.t`Select Company Logo`,
+        authorizedSignature: this.t`Select Authorized Signature`,
+        paymentQR: this.t`Select Payment QR / Barcode`,
+      };
+
       const options = {
-        title: this.t`Select Logo Image`,
+        title: titles[key] || this.t`Select Image`,
         filters: [{ name: 'Image', extensions: Object.keys(mime_types) }],
       };
 
-      if (typeof ipc !== 'undefined' && typeof ipc.selectFile === 'function') {
-        const { name, success, data } = await ipc.selectFile(options);
+      const fileSelector =
+        (typeof window !== 'undefined' && window.ipc?.selectFile) ||
+        (typeof ipc !== 'undefined' && ipc.selectFile);
+
+      if (fileSelector) {
+        const { name, success, data } = await fileSelector(options);
         if (!success || !data) return;
 
         const extension = name.split('.').at(-1)?.toLowerCase() || '';
         const type = mime_types[extension] || 'image/png';
         const dataURL = await getDataURL(type, data);
-        this.form.logo = dataURL;
+        this.form[key] = dataURL;
       }
+    },
+
+    removeAsset(key: 'logo' | 'authorizedSignature' | 'paymentQR') {
+      this.form[key] = '';
+    },
+
+    handleSelectLogo() {
+      return this.handleSelectAsset('logo');
     },
 
     async handleCreateBackup() {

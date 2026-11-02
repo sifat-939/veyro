@@ -7,7 +7,7 @@
     style="display: flex; align-items: center; gap: 12px; margin-bottom: 32px"
   >
     <img
-      v-if="print.displayLogo && print.logo"
+      v-if="(print.displayLogo || print.logo) && print.logo"
       :src="print.logo"
       alt="Company logo"
       style="width: 58px; height: 58px; object-fit: contain"
@@ -28,7 +28,7 @@
         >{{print.email}}
       </p>
       <p style="white-space: pre-line">
-        {{print.links?.address?.addressDisplay || ''}}
+        {{print.links?.address?.addressDisplay || print.address || ''}}
       </p>
     </div>
   </header>
@@ -165,7 +165,7 @@
       page-break-inside: avoid;
     "
   >
-    <div v-if="print.paymentQR && doc.showPaymentQR">
+    <div v-if="print.paymentQR && (doc.showPaymentQR || doc.showPaymentQR === undefined)">
       <h3 class="nivo-print-label" style="margin-bottom: 14px">
         Scan QR for Payment
       </h3>
@@ -184,7 +184,7 @@
       "
     >
       <img
-        v-if="print.authorizedSignature && !doc.printStatus"
+        v-if="print.authorizedSignature"
         :src="print.authorizedSignature"
         alt="Authorized signature"
         style="

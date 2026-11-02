@@ -102,12 +102,12 @@ export async function addStandardDocumentValues(doc: Doc, values: Values) {
   values.showTerms = ['SalesInvoice', 'PurchaseInvoice', 'SalesQuote'].includes(
     schema
   );
+  const hasPaymentQR = Boolean(doc.fyo.singles.PrintSettings?.paymentQR);
   values.showPaymentQR =
     schema === 'SalesInvoice' &&
     !doc.returnAgainst &&
-    !!doc.submitted &&
     !doc.isCancelled &&
-    num(doc.outstandingAmount) > 0.004;
+    (hasPaymentQR || (!!doc.submitted && num(doc.outstandingAmount) > 0.004));
   values.printColumns = [
     column('index', 'S.N.', 'center', '7%'),
     column('item', 'Name', 'left', '33%'),
@@ -431,7 +431,10 @@ export async function getStatementValues(
     toDate: printDate(to),
     currency: fyo.singles.SystemSettings?.currency,
     balanceLabel: balance(result.closing),
-    showPaymentQR: party.role !== 'Supplier' && result.closing > 0,
+    showPaymentQR:
+      Boolean(fyo.singles.PrintSettings?.paymentQR) &&
+      party.role !== 'Supplier' &&
+      result.closing > 0.004,
     printColumns: [
       column('index', 'S.N.', 'center', '6%'),
       column('date', 'Date', 'left', '15%'),

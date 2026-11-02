@@ -178,6 +178,16 @@
             </tfoot>
           </table>
 
+          <!-- Authorized Signature (if present) -->
+          <div v-if="companySignature" class="flex justify-end mt-8 mb-2">
+            <div class="text-center w-40">
+              <img :src="companySignature" alt="Authorized Signature" class="h-12 max-w-full object-contain mx-auto mb-1" />
+              <div class="border-t border-gray-400 pt-1 text-xs font-semibold text-gray-700">
+                {{ t`Authorized Signature` }}
+              </div>
+            </div>
+          </div>
+
           <!-- Footer -->
           <div class="mt-10 pt-4 border-t border-gray-200 text-center text-[10px] text-gray-400 flex items-center justify-between">
             <span>Report generated from VEYRO &bull; Business, in Balance.</span>
@@ -686,7 +696,15 @@ export default defineComponent({
     companyName(): string {
       const acc = fyo.singles?.AccountingSettings;
       const print = fyo.singles?.PrintSettings;
-      return (acc?.companyName as string) || (print?.companyName as string) || 'ACCURATE INTERNATIONAL';
+      return (
+        (acc?.companyName as string) ||
+        (print?.companyName as string) ||
+        'Company'
+      );
+    },
+    companySignature(): string {
+      const print = fyo.singles?.PrintSettings;
+      return (print?.authorizedSignature as unknown as string) || '';
     },
     companyLogo(): string {
       const print = fyo.singles?.PrintSettings;
@@ -1371,6 +1389,17 @@ export default defineComponent({
       </tr>
     </tfoot>
   </table>
+
+  ${this.companySignature ? `
+  <div style="display: flex; justify-content: flex-end; margin-top: 36px; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid;">
+    <div style="text-align: center; width: 160px;">
+      <img src="${this.companySignature}" style="max-height: 52px; max-width: 150px; object-fit: contain; margin: 0 auto 6px; display: block;" alt="Authorized Signature" />
+      <div style="border-top: 1px solid #475569; padding-top: 5px; font-size: 11px; font-weight: 600; color: #1e293b;">
+        Authorized Signature
+      </div>
+    </div>
+  </div>
+  ` : ''}
 
   <div class="footer">
     <span>Report exported from VEYRO &bull; Business, in Balance.</span>
